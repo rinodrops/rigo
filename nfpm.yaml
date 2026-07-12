@@ -10,7 +10,8 @@ version: "@VERSION@"
 section: utils
 maintainer: Rino <rino@emotiongraphics.jp>
 description: >-
-  Dotfiles manager: vault + symlink, synced by Syncthing.
+  Dotfiles manager: keeps dotfiles in a vault directory and symlinks
+  them into place. How the vault is synced is up to you.
 homepage: https://github.com/rinodrops/rigo
 license: MIT
 contents:
