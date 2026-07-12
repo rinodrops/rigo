@@ -1,0 +1,16 @@
+# nfpm configuration for .deb / .rpm packages.
+# VERSION, RIGO_ARCH (dist/ path), and NFPM_ARCH (deb-style arch)
+# are injected by the Justfile.
+name: rigo
+arch: ${NFPM_ARCH}
+platform: linux
+version: ${VERSION}
+section: utils
+maintainer: Rino <rino@emotiongraphics.jp>
+description: >-
+  Dotfiles manager: vault + symlink, synced by Syncthing.
+homepage: https://github.com/rinodrops/rigo
+license: TBD
+contents:
+  - src: dist/linux-${RIGO_ARCH}/rigo
+    dst: /usr/bin/rigo
