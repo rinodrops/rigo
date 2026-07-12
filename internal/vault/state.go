@@ -106,7 +106,8 @@ func equal_content(vault_path, target string, dir bool) (bool, error) {
 
 var errNotDir = errors.New("not a directory")
 
-// list_tree returns the sorted relative paths of all files under root.
+// list_tree returns the sorted, slash-separated relative paths of all
+// files under root.
 func list_tree(root string) ([]string, error) {
 	fi, err := os.Stat(root)
 	if err != nil {
@@ -121,7 +122,7 @@ func list_tree(root string) ([]string, error) {
 			return err
 		}
 		if !d.IsDir() {
-			files = append(files, must_rel(root, p))
+			files = append(files, filepath.ToSlash(must_rel(root, p)))
 		}
 		return nil
 	})
