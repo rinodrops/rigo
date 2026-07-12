@@ -10,7 +10,7 @@ maintainer: Rino <rino@emotiongraphics.jp>
 description: >-
   Dotfiles manager: vault + symlink, synced by Syncthing.
 homepage: https://github.com/rinodrops/rigo
-license: TBD
+license: MIT
 contents:
   - src: dist/linux-${RIGO_ARCH}/rigo
     dst: /usr/bin/rigo
