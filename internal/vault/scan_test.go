@@ -69,18 +69,23 @@ func TestScanBasic(t *testing.T) {
 	root := t.TempDir()
 	home := t.TempDir()
 	make_tree(t, root, map[string]string{
-		".zshrc":                  "z",
-		".config/rigo/rigo.toml":  "c",
-		".vim/vimrc":              "v", // dir-unit via dirs
-		".zsh/aliases.zsh":        "a", // dir-unit via tag
-		".claude/settings.json":   "s", // container
-		".claude/local.json":      "l",
-		".DS_Store":               "junk",
-		".claude/.DS_Store":       "junk",
-		"note.bak":                "junk",
-		"proj/node_modules/x.js":  "junk",
-		".trash/20260101T000000/": "",
-		".os/linux/.vimrc":        "other-os",
+		".zshrc":                 "z",
+		".config/rigo/rigo.toml": "c",
+		".vim/vimrc":             "v", // dir-unit via dirs
+		".zsh/aliases.zsh":       "a", // dir-unit via tag
+		".claude/settings.json":  "s", // container
+		".claude/local.json":     "l",
+		".DS_Store":              "junk",
+		".claude/.DS_Store":      "junk",
+		"note.bak":               "junk",
+		"proj/node_modules/x.js": "junk",
+		"._.zshrc":               "junk", // AppleDouble sidecar
+		".zshrc.icloud":          "junk", // iCloud placeholder
+		".git/config":            "junk", // vault under version control
+		"@eaDir/thumb.jpg":       "junk", // Synology
+		".claude/settings (rino's conflicted copy 2026-07-13).json": "junk",
+		".trash/20260101T000000/":                                   "",
+		".os/linux/.vimrc":                                          "other-os",
 	})
 	cfg := load_config(t, `
 dirs   = [".vim/"]

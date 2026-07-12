@@ -8,20 +8,64 @@ import (
 )
 
 // Names and basename globs that are never managed: OS droppings and
-// sync-tool artifacts that would otherwise become vault entries.
+// sync-tool artifacts that would otherwise become vault entries. Rigo
+// does not care how the vault is synced, so every major sync service's
+// artifacts are covered. Conflict-copy names are localized by Dropbox
+// and Nextcloud; only the English forms are built in, other locales
+// belong in the user's ignore list.
 var builtin_ignore_names = map[string]bool{
-	".DS_Store":   true,
-	".localized":  true,
+	// macOS (Icon\r is the custom-folder-icon file)
+	".DS_Store":    true,
+	".localized":   true,
+	".AppleDouble": true,
+	"Icon\r":       true,
+	// Windows
 	"Thumbs.db":   true,
 	"desktop.ini": true,
+	// Syncthing
 	".stfolder":   true,
 	".stversions": true,
 	".stignore":   true,
+	// Dropbox
+	".dropbox":       true,
+	".dropbox.attr":  true,
+	".dropbox.cache": true,
+	// Google Drive for desktop
+	".tmp.driveupload":   true,
+	".tmp.drivedownload": true,
+	// OneDrive folder marker
+	".849C9593-D756-4E56-8D6E-42412F2A707B": true,
+	// Nextcloud / ownCloud
+	".owncloudsync.log":  true,
+	".nextcloudsync.log": true,
+	// Resilio Sync
+	".sync": true,
+	// Synology (Drive / SMB shares)
+	"@eaDir":   true,
+	"#recycle": true,
+	// A vault kept in version control
+	".git": true,
 }
 
 var builtin_ignore_globs = []string{
+	// Syncthing temp files and conflict copies
 	".syncthing.*.tmp",
 	"*.sync-conflict-*",
+	// iCloud Drive materialize-on-demand placeholders
+	".*.icloud",
+	// AppleDouble sidecars on network and non-native filesystems
+	"._*",
+	// Dropbox / Nextcloud conflict copies (English form)
+	"*conflicted copy*",
+	// Nextcloud / ownCloud sync journals
+	".sync_*.db*",
+	"._sync_*.db*",
+	".csync_journal.db*",
+	// Resilio Sync partial transfers
+	"*.!sync",
+	// NFS silly renames and FUSE hidden files
+	".nfs*",
+	".fuse_hidden*",
 }
 
 // ignorer matches vault-relative paths against the built-in ignores
