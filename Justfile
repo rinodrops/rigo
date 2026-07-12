@@ -89,12 +89,17 @@ linux-zip-x86_64: linux-build-x86_64 (_zip "linux-x86_64" "x86_64" "linux")
 
 linux-zip-arm64: linux-build-arm64 (_zip "linux-arm64" "arm64" "linux")
 
-# .deb/.rpm via nfpm (env vars consumed by nfpm.yaml)
+# .deb/.rpm via nfpm. The concrete config is generated from the
+# nfpm.yaml template with sed (@VAR@ placeholders); nfpm's own env var
+# expansion does not cover the contents src path.
 _linux-pkg arch nfpm_arch:
-    VERSION={{version}} RIGO_ARCH={{arch}} NFPM_ARCH={{nfpm_arch}} \
-        nfpm package -f nfpm.yaml -p deb -t {{dist}}
-    VERSION={{version}} RIGO_ARCH={{arch}} NFPM_ARCH={{nfpm_arch}} \
-        nfpm package -f nfpm.yaml -p rpm -t {{dist}}
+    sed -e "s/@VERSION@/{{version}}/" \
+        -e "s/@RIGO_ARCH@/{{arch}}/" \
+        -e "s/@NFPM_ARCH@/{{nfpm_arch}}/" \
+        nfpm.yaml > "{{dist}}/nfpm-{{arch}}.yaml"
+    nfpm package -f "{{dist}}/nfpm-{{arch}}.yaml" -p deb -t {{dist}}
+    nfpm package -f "{{dist}}/nfpm-{{arch}}.yaml" -p rpm -t {{dist}}
+    rm "{{dist}}/nfpm-{{arch}}.yaml"
 
 linux-pkg-x86_64: linux-build-x86_64 (_linux-pkg "x86_64" "amd64")
 
