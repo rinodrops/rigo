@@ -9,7 +9,7 @@ import (
 func main() {
 	root := &cobra.Command{
 		Use:     "rigo",
-		Short:   "Dotfiles manager: vault + symlink, synced by Syncthing",
+		Short:   "Dotfiles manager: vault + symlink",
 		Version: Version,
 	}
 	root.PersistentFlags().StringP("file", "f", "",

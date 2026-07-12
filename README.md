@@ -2,8 +2,10 @@
 
 Dotfiles manager for macOS, Linux, and Windows.
 
-Rigo keeps the real files in a **vault** — a directory synced across your
-machines (e.g., by Syncthing) — and symlinks them into place. Editing a
+Rigo keeps the real files in a **vault** — a plain directory you sync
+across your machines with whatever tool you like (Syncthing, Dropbox,
+iCloud Drive, ...) — and symlinks them into place. Rigo itself never
+talks to the sync mechanism. Editing a
 linked file edits the vault copy directly, so changes propagate with no
 extra "apply" step. There is no manifest and no templating: the vault's
 directory tree itself is the single source of truth, mirroring your home
