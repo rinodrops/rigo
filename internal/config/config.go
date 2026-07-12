@@ -33,6 +33,7 @@ type Secret struct {
 type Config struct {
 	Dirs     []string
 	Ignore   []string
+	Distros  []string
 	OSDir    string
 	AbsDir   string
 	TrashDir string
@@ -48,6 +49,7 @@ type Config struct {
 type raw struct {
 	Dirs     []string            `toml:"dirs"`
 	Ignore   []string            `toml:"ignore"`
+	Distros  []string            `toml:"distros"`
 	OSDir    string              `toml:"os_dir"`
 	AbsDir   string              `toml:"abs_dir"`
 	TrashDir string              `toml:"trash_dir"`
@@ -80,6 +82,7 @@ func Load(path string) (*Config, error) {
 	c := &Config{
 		Dirs:     r.Dirs,
 		Ignore:   r.Ignore,
+		Distros:  r.Distros,
 		OSDir:    r.OSDir,
 		AbsDir:   r.AbsDir,
 		TrashDir: r.TrashDir,
@@ -118,6 +121,13 @@ func (c *Config) validate() error {
 
 	if err := check_paths("dirs", c.Dirs); err != nil {
 		return err
+	}
+	// Distro overlay names follow os-release IDs: lowercase,
+	// machine-readable, and never dot-prefixed.
+	for _, d := range c.Distros {
+		if d == "" || strings.HasPrefix(d, ".") || strings.ContainsAny(d, `/\`) || d != strings.ToLower(d) {
+			return fmt.Errorf("distros: %q must be a lowercase os-release ID (no dots at the start, no path separators)", d)
+		}
 	}
 	for tag, paths := range c.Tags {
 		if tag == "" {

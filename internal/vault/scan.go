@@ -82,20 +82,26 @@ func Scan(root string, cfg *config.Config, host Host) ([]Entry, []string, error)
 	if err := s.layer(filepath.Join(os_root, cfg.AbsDir), true, true); err != nil {
 		return nil, nil, err
 	}
+	var warnings []string
 	if host.GOOS == "linux" && host.Distro != "" {
-		distro_root := filepath.Join(os_root, host.Distro)
-		if err := s.layer(distro_root, true, false); err != nil {
-			return nil, nil, err
-		}
-		if err := s.layer(filepath.Join(distro_root, cfg.AbsDir), true, true); err != nil {
-			return nil, nil, err
+		if s.distro_declared(host.Distro) {
+			distro_root := filepath.Join(os_root, host.Distro)
+			if err := s.layer(distro_root, true, false); err != nil {
+				return nil, nil, err
+			}
+			if err := s.layer(filepath.Join(distro_root, cfg.AbsDir), true, true); err != nil {
+				return nil, nil, err
+			}
+		} else if fi, err := os.Stat(filepath.Join(os_root, host.Distro)); err == nil && fi.IsDir() {
+			warnings = append(warnings, fmt.Sprintf(
+				"%s/%s/%s matches this host's distro but is not declared in distros, so it is treated as home content",
+				cfg.OSDir, host.GOOS, host.Distro))
 		}
 	}
 
 	if err := s.check_nesting(); err != nil {
 		return nil, nil, err
 	}
-	var warnings []string
 	for p := range s.decls.all {
 		if !s.decls.seen[p] {
 			warnings = append(warnings, fmt.Sprintf("%s is declared in rigo.toml but has no vault entry", p))
@@ -187,11 +193,20 @@ func (s *scanner) skip_special(layer_root, p, logical string, os_layer, abs bool
 	if logical == s.cfg.AbsDir {
 		return true
 	}
-	// Inside .os/linux/, a first-level directory not starting with a
-	// dot is a distro overlay (dotfiles are dot-prefixed; the current
-	// distro's overlay is scanned as its own layer).
-	if s.host.GOOS == "linux" && filepath.Base(layer_root) == "linux" {
-		if fi, err := os.Stat(p); err == nil && fi.IsDir() && !strings.HasPrefix(logical, ".") {
+	// Inside .os/linux/, first-level directories declared in distros
+	// are distro overlays: the current distro's one is scanned as its
+	// own layer, the others belong to other machines.
+	if s.host.GOOS == "linux" && filepath.Base(layer_root) == "linux" && s.distro_declared(logical) {
+		if fi, err := os.Stat(p); err == nil && fi.IsDir() {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *scanner) distro_declared(name string) bool {
+	for _, d := range s.cfg.Distros {
+		if d == name {
 			return true
 		}
 	}

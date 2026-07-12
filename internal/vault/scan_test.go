@@ -126,15 +126,16 @@ func TestScanOSOverlayAndDistro(t *testing.T) {
 		".os/linux/debian/.vimrc":    "debian",
 		".os/darwin/.hammerspoon/a":  "mac-only",
 		".os/linux/.abs/etc/foo.cfg": "abs",
+		".os/linux/opt/tool.conf":    "non-dot content",
 	})
-	cfg := load_config(t, "")
+	cfg := load_config(t, `distros = ["ubuntu", "debian"]`)
 	host := Host{Name: "box", GOOS: "linux", Distro: "ubuntu", Home: home}
 
 	entries, _, err := Scan(root, cfg, host)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{".gitconfig", ".vimrc", "/etc/foo.cfg"}
+	want := []string{".gitconfig", ".vimrc", "/etc/foo.cfg", "opt/tool.conf"}
 	if got := paths(entries); strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("entries: got %v, want %v", got, want)
 	}
@@ -241,6 +242,25 @@ func TestScanGuards(t *testing.T) {
 				t.Errorf("want error mentioning %q, got %v", tc.want, err)
 			}
 		})
+	}
+}
+
+func TestScanWarnsUndeclaredDistro(t *testing.T) {
+	root := t.TempDir()
+	make_tree(t, root, map[string]string{".os/linux/ubuntu/.vimrc": "u"})
+	cfg := load_config(t, "")
+	host := Host{Name: "box", GOOS: "linux", Distro: "ubuntu", Home: t.TempDir()}
+
+	entries, warnings, err := Scan(root, cfg, host)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "not declared in distros") {
+		t.Errorf("warnings: %v", warnings)
+	}
+	// Without the declaration the directory is plain home content.
+	if _, ok := Find(entries, "ubuntu/.vimrc"); !ok {
+		t.Errorf("undeclared distro dir should scan as content, got %v", paths(entries))
 	}
 }
 

@@ -114,6 +114,8 @@ func TestLoadErrors(t *testing.T) {
 		{"secret absolute path", `[secrets]
 "/etc/token" = "op://x/y"`, "relative to the home"},
 		{"os_dir with separator", `os_dir = "nested/os"`, "plain directory name"},
+		{"uppercase distro", `distros = ["Ubuntu"]`, "lowercase os-release ID"},
+		{"dot-prefixed distro", `distros = [".hidden"]`, "lowercase os-release ID"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
