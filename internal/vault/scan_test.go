@@ -81,7 +81,6 @@ func TestScanBasic(t *testing.T) {
 		"proj/node_modules/x.js": "junk",
 		"._.zshrc":               "junk", // AppleDouble sidecar
 		".zshrc.icloud":          "junk", // iCloud placeholder
-		".git/config":            "junk", // vault under version control
 		"@eaDir/thumb.jpg":       "junk", // Synology
 		".claude/settings (rino's conflicted copy 2026-07-13).json": "junk",
 		".trash/20260101T000000/":                                   "",

@@ -38,13 +38,9 @@ var builtin_ignore_names = map[string]bool{
 	// Nextcloud / ownCloud
 	".owncloudsync.log":  true,
 	".nextcloudsync.log": true,
-	// Resilio Sync
-	".sync": true,
 	// Synology (Drive / SMB shares)
 	"@eaDir":   true,
 	"#recycle": true,
-	// A vault kept in version control
-	".git": true,
 }
 
 var builtin_ignore_globs = []string{
