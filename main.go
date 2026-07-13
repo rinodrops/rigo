@@ -150,10 +150,7 @@ func apply_cmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			res, err := vault.Apply(s.entries, s.sel)
-			if err != nil {
-				return err
-			}
+			res := vault.Apply(s.entries, s.sel)
 
 			out := cmd.OutOrStdout()
 			for _, p := range res.Linked {
@@ -165,8 +162,14 @@ func apply_cmd() *cobra.Command {
 			for _, p := range res.Broken {
 				fmt.Fprintf(out, "broken    %s  (left untouched)\n", p)
 			}
-			fmt.Fprintf(out, "\n%d linked, %d conflict, %d broken, %d excluded\n",
-				len(res.Linked), len(res.Conflicts), len(res.Broken), res.Excluded)
+			for _, f := range res.Failed {
+				fmt.Fprintf(cmd.ErrOrStderr(), "failed    %s\n", f)
+			}
+			fmt.Fprintf(out, "\n%d linked, %d conflict, %d broken, %d failed, %d excluded\n",
+				len(res.Linked), len(res.Conflicts), len(res.Broken), len(res.Failed), res.Excluded)
+			if n := len(res.Failed); n > 0 {
+				return fmt.Errorf("%d entries failed to converge", n)
+			}
 			return nil
 		},
 	}

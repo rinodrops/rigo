@@ -27,6 +27,13 @@ type Secret struct {
 	OS   []string
 }
 
+// Volume is one [volumes] entry: a named Windows volume mapped to a
+// drive letter, either globally (Default) or per host/group.
+type Volume struct {
+	Default string            // drive letter; "" when only hosts map it
+	Hosts   map[string]string // host or group name → drive letter
+}
+
 // Config is the typed content of rigo.toml. Paths are kept as written
 // (including any trailing slash); normalization against the vault tree
 // happens at scan time.
@@ -42,6 +49,7 @@ type Config struct {
 	Include  map[string][]string
 	Exclude  map[string][]string
 	Secrets  map[string]Secret
+	Volumes  map[string]Volume
 }
 
 // raw mirrors the TOML document. Secrets values are decoded loosely
@@ -58,6 +66,7 @@ type raw struct {
 	Include  map[string][]string `toml:"include"`
 	Exclude  map[string][]string `toml:"exclude"`
 	Secrets  map[string]any      `toml:"secrets"`
+	Volumes  map[string]any      `toml:"volumes"`
 }
 
 // Load reads and validates the rigo.toml at path.
@@ -104,6 +113,9 @@ func Load(path string) (*Config, error) {
 	if c.Secrets, err = parse_secrets(r.Secrets); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
+	if c.Volumes, err = parse_volumes(r.Volumes); err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
 	if err := c.validate(); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
@@ -140,7 +152,8 @@ func (c *Config) validate() error {
 
 	// Group members and include/exclude keys identify hosts (or groups)
 	// and share one namespace: lowercase, no dots, so that runtime
-	// hostname matching never depends on case folding.
+	// hostname matching never depends on case folding. "default" is
+	// reserved: it selects the fallback letter in [volumes] tables.
 	hosts := map[string]string{}
 	for group, members := range c.Groups {
 		if err := check_name("groups", group); err != nil {
@@ -194,7 +207,58 @@ func check_name(key, name string) error {
 	if strings.Contains(name, ".") || name != strings.ToLower(name) {
 		return fmt.Errorf("%s: %q must be lowercase and contain no dots", key, name)
 	}
+	if name == "default" {
+		return fmt.Errorf("%s: \"default\" is reserved (it names the fallback letter in [volumes])", key)
+	}
 	return nil
+}
+
+func parse_volumes(entries map[string]any) (map[string]Volume, error) {
+	if len(entries) == 0 {
+		return nil, nil
+	}
+	check_letter := func(name string, v any) (string, error) {
+		letter, ok := v.(string)
+		if !ok || len(letter) != 1 || letter[0] < 'a' || letter[0] > 'z' {
+			return "", fmt.Errorf("volumes.%s: drive letter must be a single lowercase letter, got %v", name, v)
+		}
+		return letter, nil
+	}
+	volumes := make(map[string]Volume, len(entries))
+	for name, value := range entries {
+		if err := check_name("volumes", name); err != nil {
+			return nil, err
+		}
+		var vol Volume
+		switch v := value.(type) {
+		case string:
+			letter, err := check_letter(name, v)
+			if err != nil {
+				return nil, err
+			}
+			vol.Default = letter
+		case map[string]any:
+			vol.Hosts = make(map[string]string, len(v))
+			for key, field := range v {
+				letter, err := check_letter(name, field)
+				if err != nil {
+					return nil, err
+				}
+				if key == "default" {
+					vol.Default = letter
+					continue
+				}
+				if err := check_name(fmt.Sprintf("volumes.%s", name), key); err != nil {
+					return nil, err
+				}
+				vol.Hosts[key] = letter
+			}
+		default:
+			return nil, fmt.Errorf("volumes.%s: value must be a drive letter or a table of host/group → letter", name)
+		}
+		volumes[name] = vol
+	}
+	return volumes, nil
 }
 
 func parse_secrets(entries map[string]any) (map[string]Secret, error) {

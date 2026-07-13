@@ -157,13 +157,18 @@ func TestScanOSOverlayAndDistro(t *testing.T) {
 func TestScanWindowsSections(t *testing.T) {
 	root := t.TempDir()
 	make_tree(t, root, map[string]string{
-		".os/windows/.nyagos":                    "profile",
-		".os/windows/.config/tool/conf":          "xdg",
-		".os/windows/.appdata/Code/settings":     "appdata",
-		".os/windows/.local/Programs/tool/t.ini": "localappdata",
-		".os/windows/.abs/Program Files/x/x.ini": "abs",
+		".os/windows/.nyagos":                           "profile",
+		".os/windows/.config/tool/conf":                 "xdg",
+		".os/windows/.appdata/Code/settings":            "appdata",
+		".os/windows/.local/Programs/tool/t.ini":        "localappdata",
+		".os/windows/.abs/system/Program Files/x/x.ini": "abs",
+		".os/windows/.abs/data/Tools/foo.ini":           "abs-data",
+		".os/windows/.abs/orphan/x.txt":                 "unresolved",
 	})
-	cfg := load_config(t, "")
+	cfg := load_config(t, `
+[volumes]
+data = { default = "d", winpc = "e" }
+`)
 	host := Host{
 		Name: "winpc", GOOS: "windows",
 		Home:         filepath.FromSlash("C:/Users/rino"),
@@ -172,21 +177,78 @@ func TestScanWindowsSections(t *testing.T) {
 		SysDrive:     "C:",
 	}
 
-	entries, _, err := Scan(root, cfg, host)
+	entries, warnings, err := Scan(root, cfg, host)
 	if err != nil {
 		t.Fatal(err)
 	}
+	sep := string(filepath.Separator)
 	cases := map[string]string{
-		".nyagos":                    filepath.Join(host.Home, ".nyagos"),
-		".config/tool/conf":          filepath.Join(host.Home, ".config", "tool", "conf"),
-		".appdata/Code/settings":     filepath.Join(host.AppData, "Code", "settings"),
-		".local/Programs/tool/t.ini": filepath.Join(host.LocalAppData, "Programs", "tool", "t.ini"),
-		"/Program Files/x/x.ini":     filepath.Join("C:"+string(filepath.Separator), "Program Files", "x", "x.ini"),
+		".nyagos":                       filepath.Join(host.Home, ".nyagos"),
+		".config/tool/conf":             filepath.Join(host.Home, ".config", "tool", "conf"),
+		".appdata/Code/settings":        filepath.Join(host.AppData, "Code", "settings"),
+		".local/Programs/tool/t.ini":    filepath.Join(host.LocalAppData, "Programs", "tool", "t.ini"),
+		"system:/Program Files/x/x.ini": "C:" + sep + filepath.FromSlash("Program Files/x/x.ini"),
+		// winpc's own entry (e) beats the volume default (d).
+		"data:/Tools/foo.ini": "E:" + sep + filepath.FromSlash("Tools/foo.ini"),
 	}
 	for logical, want := range cases {
 		if e := find(t, entries, logical); e.Target != want {
 			t.Errorf("%s: target %q, want %q", logical, e.Target, want)
 		}
+	}
+	// The undeclared volume is skipped with a warning, not scanned.
+	if _, ok := Find(entries, "orphan:/x.txt"); ok {
+		t.Error("unresolved volume should not produce entries")
+	}
+	found := false
+	for _, w := range warnings {
+		if strings.Contains(w, `volume "orphan"`) {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("missing unresolved-volume warning: %v", warnings)
+	}
+}
+
+func TestVolumeResolution(t *testing.T) {
+	cfg := load_config(t, `
+[groups]
+work = ["workpc", "buildbox"]
+lab  = ["buildbox"]
+
+[volumes]
+data    = { default = "d", work = "e" }
+scratch = "s"
+sysalt  = { workpc = "q" }
+`)
+	host := func(name string) Host { return Host{Name: name, GOOS: "windows", SysDrive: "C:"} }
+
+	got, err := resolve_volumes(cfg, host("workpc"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, want := range map[string]string{"system": "c", "data": "e", "scratch": "s", "sysalt": "q"} {
+		if got[name] != want {
+			t.Errorf("workpc %s: got %q, want %q", name, got[name], want)
+		}
+	}
+
+	got, err = resolve_volumes(cfg, host("other"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["data"] != "d" {
+		t.Errorf("other data: got %q, want default d", got["data"])
+	}
+	if _, ok := got["sysalt"]; ok {
+		t.Error("sysalt should be unresolved on other")
+	}
+
+	// Conflicting letters from two groups of the same host.
+	cfg.Volumes["data"] = config.Volume{Hosts: map[string]string{"work": "e", "lab": "f"}}
+	if _, err := resolve_volumes(cfg, host("buildbox")); err == nil {
+		t.Error("expected a group-conflict error")
 	}
 }
 

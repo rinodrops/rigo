@@ -78,12 +78,10 @@ type Entry struct {
 
 // target maps a logical path from one vault layer to its absolute
 // location on this host. abs is true inside a .abs subtree, where the
-// logical path is the target path without the volume prefix.
+// logical path mirrors the filesystem root (Windows .abs paths go
+// through named volumes in the scanner instead).
 func (h Host) target(logical string, abs bool) string {
 	if abs {
-		if h.GOOS == "windows" {
-			return filepath.Join(h.SysDrive+string(filepath.Separator), filepath.FromSlash(logical))
-		}
 		return filepath.Join("/", filepath.FromSlash(logical))
 	}
 	if rest, ok := strings.CutPrefix(logical, ".config/"); ok && h.ConfigHome != "" {
