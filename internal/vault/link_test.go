@@ -152,10 +152,7 @@ func TestApplyConverges(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := Apply(entries, Select(cfg, "mac"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := Apply(entries, Select(cfg, "mac"))
 	if strings.Join(res.Linked, ",") != ".gitconfig,.zshrc" {
 		t.Errorf("linked: %v", res.Linked)
 	}
@@ -180,6 +177,31 @@ func TestApplyConverges(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(home, ".excluded")); !os.IsNotExist(err) {
 		t.Error(".excluded should not be deployed")
+	}
+}
+
+func TestApplyContinuesPastFailures(t *testing.T) {
+	root := t.TempDir()
+	home := t.TempDir()
+	make_tree(t, root, map[string]string{
+		".blocker/inner.txt": "x\n", // will fail: parent path is a file locally
+		".zshrc":             "z\n", // must still converge
+	})
+	// A real *file* where the entry's parent directory should be makes
+	// MkdirAll fail — similar to a missing drive on Windows.
+	make_tree(t, home, map[string]string{".blocker": "i am a file\n"})
+	cfg := load_config(t, "")
+	entries, _, err := Scan(root, cfg, darwin_host(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res := Apply(entries, Select(cfg, "mac"))
+	if len(res.Failed) != 1 || !strings.Contains(res.Failed[0], ".blocker/inner.txt") {
+		t.Errorf("failed: %v", res.Failed)
+	}
+	if len(res.Linked) != 1 || res.Linked[0] != ".zshrc" {
+		t.Errorf("linked: %v", res.Linked)
 	}
 }
 

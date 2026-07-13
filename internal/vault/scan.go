@@ -61,6 +61,10 @@ func Scan(root string, cfg *config.Config, host Host) ([]Entry, []string, error)
 	if err != nil {
 		return nil, nil, err
 	}
+	volumes, err := resolve_volumes(cfg, host)
+	if err != nil {
+		return nil, nil, err
+	}
 	s := &scanner{
 		root:    root,
 		cfg:     cfg,
@@ -68,6 +72,7 @@ func Scan(root string, cfg *config.Config, host Host) ([]Entry, []string, error)
 		ig:      ig,
 		decls:   new_decls(cfg),
 		entries: map[string]Entry{},
+		volumes: volumes,
 	}
 
 	// Later layers override earlier ones on the same logical path:
@@ -82,7 +87,6 @@ func Scan(root string, cfg *config.Config, host Host) ([]Entry, []string, error)
 	if err := s.layer(filepath.Join(os_root, cfg.AbsDir), true, true); err != nil {
 		return nil, nil, err
 	}
-	var warnings []string
 	if host.GOOS == "linux" && host.Distro != "" {
 		if s.distro_declared(host.Distro) {
 			distro_root := filepath.Join(os_root, host.Distro)
@@ -93,9 +97,8 @@ func Scan(root string, cfg *config.Config, host Host) ([]Entry, []string, error)
 				return nil, nil, err
 			}
 		} else if fi, err := os.Stat(filepath.Join(os_root, host.Distro)); err == nil && fi.IsDir() {
-			warnings = append(warnings, fmt.Sprintf(
-				"%s/%s/%s matches this host's distro but is not declared in distros, so it is treated as home content",
-				cfg.OSDir, host.GOOS, host.Distro))
+			s.warn("%s/%s/%s matches this host's distro but is not declared in distros, so it is treated as home content",
+				cfg.OSDir, host.GOOS, host.Distro)
 		}
 	}
 
@@ -104,9 +107,10 @@ func Scan(root string, cfg *config.Config, host Host) ([]Entry, []string, error)
 	}
 	for p := range s.decls.all {
 		if !s.decls.seen[p] {
-			warnings = append(warnings, fmt.Sprintf("%s is declared in rigo.toml but has no vault entry", p))
+			s.warn("%s is declared in rigo.toml but has no vault entry", p)
 		}
 	}
+	warnings := s.warnings
 	sort.Strings(warnings)
 
 	entries := make([]Entry, 0, len(s.entries))
@@ -118,12 +122,18 @@ func Scan(root string, cfg *config.Config, host Host) ([]Entry, []string, error)
 }
 
 type scanner struct {
-	root    string
-	cfg     *config.Config
-	host    Host
-	ig      *ignorer
-	decls   *decls
-	entries map[string]Entry
+	root     string
+	cfg      *config.Config
+	host     Host
+	ig       *ignorer
+	decls    *decls
+	entries  map[string]Entry
+	volumes  map[string]string // volume name → drive letter (windows)
+	warnings []string
+}
+
+func (s *scanner) warn(format string, args ...any) {
+	s.warnings = append(s.warnings, fmt.Sprintf(format, args...))
 }
 
 // layer walks one vault layer (common, .os/<goos>, its .abs, or a
@@ -154,6 +164,20 @@ func (s *scanner) layer(dir string, os_layer, abs bool) error {
 				return filepath.SkipDir
 			}
 			return nil
+		}
+
+		// On Windows the first level under .abs holds named volumes.
+		if abs && s.host.GOOS == "windows" && !strings.Contains(logical, "/") {
+			if !d.IsDir() {
+				s.warn("%s sits directly under %s and belongs to no volume; skipped", vault_rel, s.cfg.AbsDir)
+				return nil
+			}
+			if _, ok := s.volumes[logical]; !ok {
+				s.warn("volume %q has no drive letter for host %s; its entries are skipped (declare it in [volumes] or exclude its paths)",
+					logical, s.host.Name)
+				return filepath.SkipDir
+			}
+			return nil // resolved volume directory: descend
 		}
 
 		declared := s.decls.all[logical] && !abs
@@ -216,6 +240,11 @@ func (s *scanner) distro_declared(name string) bool {
 func (s *scanner) add(logical, vault_path string, dir, os_layer, abs bool) {
 	e := Entry{Vault: vault_path, Dir: dir}
 	switch {
+	case abs && s.host.GOOS == "windows":
+		volume, rest, _ := strings.Cut(logical, "/")
+		letter := s.volumes[volume]
+		e.Path = volume + ":/" + rest
+		e.Target = strings.ToUpper(letter) + ":" + string(filepath.Separator) + filepath.FromSlash(rest)
 	case abs:
 		e.Path = "/" + logical
 		e.Target = s.host.target(logical, true)

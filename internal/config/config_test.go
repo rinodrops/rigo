@@ -116,6 +116,14 @@ func TestLoadErrors(t *testing.T) {
 		{"os_dir with separator", `os_dir = "nested/os"`, "plain directory name"},
 		{"uppercase distro", `distros = ["Ubuntu"]`, "lowercase os-release ID"},
 		{"dot-prefixed distro", `distros = [".hidden"]`, "lowercase os-release ID"},
+		{"volume bad letter", `[volumes]
+data = "dd"`, "single lowercase letter"},
+		{"volume bad table letter", `[volumes]
+data = { default = "D" }`, "single lowercase letter"},
+		{"volume bad value", `[volumes]
+data = 4`, "drive letter or a table"},
+		{"group named default", "[groups]\ndefault = [\"pc\"]", "reserved"},
+		{"host named default", "[groups]\nwork = [\"default\"]", "reserved"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
