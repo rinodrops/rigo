@@ -27,7 +27,7 @@ func main() {
 	}
 	root.PersistentFlags().StringP("file", "f", "",
 		"path to rigo.toml inside the vault (first-run bootstrap)")
-	root.AddCommand(status_cmd(), apply_cmd(), link_cmd(), unlink_cmd())
+	root.AddCommand(status_cmd(), apply_cmd(), link_cmd(), unlink_cmd(), add_cmd(), forget_cmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "rigo:", err)
@@ -38,11 +38,13 @@ func main() {
 // session is everything a command needs: the loaded config, the
 // scanned entries for this host, and the selection filter.
 type session struct {
-	cfg     *config.Config
-	root    string
-	host    vault.Host
-	entries []vault.Entry
-	sel     *vault.Selection
+	cfg      *config.Config
+	cfg_path string // resolved (vault-side) path of rigo.toml
+	root     string
+	host     vault.Host
+	entries  []vault.Entry
+	sel      *vault.Selection
+	volumes  map[string]string
 }
 
 func setup(cmd *cobra.Command) (*session, error) {
@@ -74,12 +76,18 @@ func setup(cmd *cobra.Command) (*session, error) {
 	for _, w := range warnings {
 		fmt.Fprintln(cmd.ErrOrStderr(), "warning:", w)
 	}
+	volumes, err := vault.Volumes(cfg, host)
+	if err != nil {
+		return nil, err
+	}
 	return &session{
-		cfg:     cfg,
-		root:    vault_root,
-		host:    host,
-		entries: entries,
-		sel:     vault.Select(cfg, host.Name),
+		cfg:      cfg,
+		cfg_path: cfg_path,
+		root:     vault_root,
+		host:     host,
+		entries:  entries,
+		sel:      vault.Select(cfg, host.Name),
+		volumes:  volumes,
 	}, nil
 }
 
