@@ -76,6 +76,13 @@ type Entry struct {
 	Dir    bool   // directory-unit entry
 }
 
+// Target maps a home-relative logical path to its location on this
+// host. Secrets share this mapping: their declared paths are
+// home-relative like ordinary entries.
+func (h Host) Target(logical string) string {
+	return h.target(logical, false)
+}
+
 // target maps a logical path from one vault layer to its absolute
 // location on this host. abs is true inside a .abs subtree, where the
 // logical path mirrors the filesystem root (Windows .abs paths go
