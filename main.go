@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -28,10 +29,13 @@ func main() {
 	root.PersistentFlags().StringP("file", "f", "",
 		"path to rigo.toml inside the vault (first-run bootstrap)")
 	root.AddCommand(status_cmd(), apply_cmd(), link_cmd(), unlink_cmd(),
-		add_cmd(), forget_cmd(), clean_cmd(), trash_cmd(), tag_cmd())
+		add_cmd(), forget_cmd(), clean_cmd(), trash_cmd(), tag_cmd(), diff_cmd())
 
 	if err := root.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "rigo:", err)
+		// diff exits 1 on differences, like diff(1), without a message.
+		if !errors.Is(err, err_differs) {
+			fmt.Fprintln(os.Stderr, "rigo:", err)
+		}
 		os.Exit(1)
 	}
 }
