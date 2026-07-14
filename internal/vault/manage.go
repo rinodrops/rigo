@@ -72,16 +72,34 @@ func Forget(e Entry, root string, cfg *config.Config, deployed bool) (string, er
 		}
 	}
 
-	rel := must_rel(root, e.Vault)
-	trash_rel := filepath.Join(cfg.TrashDir, time.Now().UTC().Format(trash_stamp), rel)
-	dest := filepath.Join(root, trash_rel)
+	rel := filepath.ToSlash(must_rel(root, e.Vault))
+	if rel == trash_meta {
+		return "", fmt.Errorf("%s is reserved for trash metadata and cannot be forgotten", trash_meta)
+	}
+	// One generation holds exactly one entry; bump the stamp when two
+	// forgets land within the same second.
+	stamp := time.Now().UTC()
+	for {
+		if _, err := os.Lstat(filepath.Join(root, cfg.TrashDir, stamp.Format(trash_stamp))); os.IsNotExist(err) {
+			break
+		}
+		stamp = stamp.Add(time.Second)
+	}
+	gen := filepath.Join(cfg.TrashDir, stamp.Format(trash_stamp))
+	dest := filepath.Join(root, gen, filepath.FromSlash(rel))
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return "", err
 	}
 	if err := os.Rename(e.Vault, dest); err != nil {
 		return "", err
 	}
-	return filepath.ToSlash(trash_rel), nil
+	// The metadata file names the trashed path, so listing never has
+	// to guess where the entry ends inside the generation tree.
+	meta := filepath.Join(root, gen, trash_meta)
+	if err := os.WriteFile(meta, []byte(rel+"\n"), 0o644); err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(filepath.Join(gen, filepath.FromSlash(rel))), nil
 }
 
 // move_any renames src to dst, falling back to copy-and-delete across
