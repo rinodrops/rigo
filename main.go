@@ -28,7 +28,7 @@ func main() {
 	root.PersistentFlags().StringP("file", "f", "",
 		"path to rigo.toml inside the vault (first-run bootstrap)")
 	root.AddCommand(status_cmd(), apply_cmd(), link_cmd(), unlink_cmd(),
-		add_cmd(), forget_cmd(), clean_cmd(), trash_cmd())
+		add_cmd(), forget_cmd(), clean_cmd(), trash_cmd(), tag_cmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "rigo:", err)
