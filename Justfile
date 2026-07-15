@@ -28,6 +28,11 @@ dev: win-build-x86_64
 
 release: darwin-release linux-release win-release
 
+# Print the README release-history section for a tag (Release body)
+release-notes tag:
+    @awk '/^### {{tag}}([^0-9.]|$)/{found=1; next} \
+        (/^### v/ || /^## /) && found {exit} found' README.md
+
 # --- generic cross-compile (internal) ----------------------------------
 
 _build goos goarch outdir ext="":

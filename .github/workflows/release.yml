@@ -66,10 +66,16 @@ jobs:
     needs: [darwin, linux-windows]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
           path: dist
+      - name: Extract release notes from README
+        run: |
+          just release-notes "$GITHUB_REF_NAME" > notes.md
+          test -s notes.md  # a tag without a README section cannot ship
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -77,5 +83,5 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$GITHUB_REF_NAME" \
-            --generate-notes \
+            --notes-file notes.md \
             dist/*
