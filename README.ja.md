@@ -147,6 +147,12 @@ just help     # list all recipes
 
 ## リリース履歴
 
+### v1.0.1 — 2026-07-16
+
+`status` / `link` / `unlink` / `forget` / `diff` のパス引数が，絶対パスや
+ホームパス（例: `~/.zshrc`）でも論理パスと同じVaultエントリに解決されるよう
+修正。
+
 ### v1.0.0 — 2026-07-15
 
 初回リリース。Vault + symlink方式のdotfiles管理（macOS / Linux /
