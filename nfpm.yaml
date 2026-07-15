@@ -1,16 +1,19 @@
-# nfpm configuration for .deb / .rpm packages.
-# VERSION, RIGO_ARCH (dist/ path), and NFPM_ARCH (deb-style arch)
-# are injected by the Justfile.
+# nfpm configuration template for .deb / .rpm packages.
+# @VERSION@, @RIGO_ARCH@ (dist/ path), and @NFPM_ARCH@ (deb-style arch)
+# are substituted by the Justfile via sed; nfpm reads the generated
+# file from dist/. Globs are resolved relative to the working
+# directory (the repository root).
 name: rigo
-arch: ${NFPM_ARCH}
+arch: "@NFPM_ARCH@"
 platform: linux
-version: ${VERSION}
+version: "@VERSION@"
 section: utils
 maintainer: Rino <rino@emotiongraphics.jp>
 description: >-
-  Dotfiles manager: vault + symlink, synced by Syncthing.
+  Dotfiles manager: keeps dotfiles in a vault directory and symlinks
+  them into place. How the vault is synced is up to you.
 homepage: https://github.com/rinodrops/rigo
-license: TBD
+license: MIT
 contents:
-  - src: dist/linux-${RIGO_ARCH}/rigo
+  - src: dist/linux-@RIGO_ARCH@/rigo
     dst: /usr/bin/rigo
