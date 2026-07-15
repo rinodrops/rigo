@@ -343,3 +343,53 @@ func TestScanWarnsUndeclared(t *testing.T) {
 		t.Errorf("warnings: %v", warnings)
 	}
 }
+
+func TestResolveArg(t *testing.T) {
+	root := t.TempDir()
+	home := t.TempDir()
+	make_tree(t, root, map[string]string{
+		".zshrc":     "z",
+		".vim/vimrc": "v",
+	})
+	cfg := load_config(t, `dirs = [".vim/"]`)
+	entries, _, err := Scan(root, cfg, darwin_host(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name string
+		arg  string
+		want string // logical path; empty means not found
+	}{
+		{"logical file", ".zshrc", ".zshrc"},
+		{"logical dir-unit", ".vim/", ".vim"},
+		{"absolute file", filepath.Join(home, ".zshrc"), ".zshrc"},
+		{"absolute dir-unit", filepath.Join(home, ".vim"), ".vim"},
+		{"home file", "~/.zshrc", ".zshrc"},
+		{"home dir-unit", "~/.vim", ".vim"},
+		{"unrelated absolute", filepath.Join(home, ".missing"), ""},
+		{"unrelated logical", ".missing", ""},
+	}
+
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e, ok := ResolveArg(entries, tc.arg)
+			if tc.want == "" {
+				if ok {
+					t.Fatalf("ResolveArg(%q) = %q, want not found", tc.arg, e.Path)
+				}
+				return
+			}
+			if !ok {
+				t.Fatalf("ResolveArg(%q) not found", tc.arg)
+			}
+			if e.Path != tc.want {
+				t.Fatalf("ResolveArg(%q) = %q, want %q", tc.arg, e.Path, tc.want)
+			}
+		})
+	}
+}

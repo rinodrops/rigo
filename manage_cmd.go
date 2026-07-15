@@ -293,7 +293,7 @@ func forget_cmd() *cobra.Command {
 			// forget is a vault-level operation, so entries excluded on
 			// this host are still eligible; they are just not
 			// materialized here.
-			e, ok := vault.Find(s.entries, args[0])
+			e, ok := vault.ResolveArg(s.entries, args[0])
 			if !ok {
 				return fmt.Errorf("%s is not a vault entry", args[0])
 			}
