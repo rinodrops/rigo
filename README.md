@@ -145,6 +145,12 @@ from the matching section below (`just release-notes v1.0.0`).
 
 ## Release history
 
+### v1.0.1 — 2026-07-16
+
+Fix path arguments for `status`, `link`, `unlink`, `forget`, and `diff`
+so absolute and home paths (for example `~/.zshrc`) resolve to the same
+vault entry as the logical path.
+
 ### v1.0.0 — 2026-07-15
 
 Initial release. Vault + symlink dotfiles management for macOS, Linux,
