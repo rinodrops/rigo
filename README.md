@@ -1,5 +1,9 @@
 # Rigo
 
+<p align="center">
+  English | <a href="README.ja.md">日本語</a>
+</p>
+
 Dotfiles manager for macOS, Linux, and Windows.
 
 Rigo keeps the real files in a **vault** — a plain directory you sync
@@ -10,6 +14,16 @@ directly, so changes propagate with no extra "apply" step. There is no
 manifest and no templating: the vault's directory tree itself is the
 single source of truth, mirroring your home directory
 (`vault/.zshrc` → `~/.zshrc`).
+
+<p align="center">
+  <a href="https://github.com/rinodrops/rigo/releases/latest">
+    <img src="https://img.shields.io/github/v/release/rinodrops/rigo?color=orange&label=Download" alt="Latest Release">
+  </a>
+  <img src="https://img.shields.io/badge/macOS-13%2B-blue" alt="macOS 13+">
+  <img src="https://img.shields.io/badge/Linux-blue" alt="Linux">
+  <img src="https://img.shields.io/badge/Windows-11-blue" alt="Windows 11">
+  <img src="https://img.shields.io/badge/built%20with-Go-00ADD8" alt="Built with Go">
+</p>
 
 ## Install
 
@@ -46,20 +60,20 @@ rigo forget ~/.zshrc
 
 ## Commands
 
-| Command                                     | Purpose                                                               |
-| ------------------------------------------- | --------------------------------------------------------------------- |
-| `rigo apply`                                | Converge: link everything pending/unlinked; list conflicts            |
-| `rigo status [<path>]`                      | Show the state of managed entries                                      |
-| `rigo link <path>`                          | Link one entry (interactive on conflict; `--force` prefers the vault)  |
-| `rigo unlink <path>`                        | Materialize locally for a while (the vault copy is kept)               |
+| Command                                     | Purpose                                                                                                              |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `rigo apply`                                | Converge: link everything pending/unlinked; list conflicts                                                           |
+| `rigo status [<path>]`                      | Show the state of managed entries                                                                                    |
+| `rigo link <path>`                          | Link one entry (interactive on conflict; `--force` prefers the vault)                                                |
+| `rigo unlink <path>`                        | Materialize locally for a while (the vault copy is kept)                                                             |
 | `rigo add <path>`                           | Move real content into the vault and link it back (`--os`, `--dir`/`--files`, `--tag`, `--keep-symlink`, `--volume`) |
-| `rigo forget <path>`                        | Stop managing: materialize locally, move the vault copy to the trash   |
-| `rigo diff [<path>]`                        | Show differences between local files and the vault (read-only; exit 1 when they differ) |
-| `rigo clean`                                | Clean up broken links, offering restores from the trash                |
-| `rigo tag link/unlink/show <name>`          | Bulk operations on tagged groups                                       |
-| `rigo trash ls/restore/empty`               | Inspect, restore, or purge trashed vault entries                       |
-| `rigo secrets apply/status/remove [<path>]` | Materialize secrets from a password manager (1Password `op://` refs)   |
-| `rigo -f <path> <command>`                  | First-run bootstrap: name the `rigo.toml` inside the vault directly    |
+| `rigo forget <path>`                        | Stop managing: materialize locally, move the vault copy to the trash                                                 |
+| `rigo diff [<path>]`                        | Show differences between local files and the vault (read-only; exit 1 when they differ)                              |
+| `rigo clean`                                | Clean up broken links, offering restores from the trash                                                              |
+| `rigo tag link/unlink/show <name>`          | Bulk operations on tagged groups                                                                                     |
+| `rigo trash ls/restore/empty`               | Inspect, restore, or purge trashed vault entries                                                                     |
+| `rigo secrets apply/status/remove [<path>]` | Materialize secrets from a password manager (1Password `op://` refs)                                                 |
+| `rigo -f <path> <command>`                  | First-run bootstrap: name the `rigo.toml` inside the vault directly                                                  |
 
 Entry states: `linked`, `pending`, `unlinked`, `conflict`, `broken`
 (plus `excluded` in status output). Conflicts are never resolved
