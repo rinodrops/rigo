@@ -296,3 +296,41 @@ func Find(entries []Entry, p string) (Entry, bool) {
 	}
 	return Entry{}, false
 }
+
+// ResolveArg finds an entry by logical path (Find) or by its deployed
+// target path. A leading ~/ is expanded via UserHomeDir so README-style
+// home paths work even when the shell has not expanded them.
+func ResolveArg(entries []Entry, arg string) (Entry, bool) {
+	if e, ok := Find(entries, arg); ok {
+		return e, true
+	}
+	abs, err := abs_arg(arg)
+	if err != nil {
+		return Entry{}, false
+	}
+	for _, e := range entries {
+		if filepath.Clean(e.Target) == abs {
+			return e, true
+		}
+	}
+	return Entry{}, false
+}
+
+func abs_arg(arg string) (string, error) {
+	if arg == "~" || strings.HasPrefix(arg, "~/") || strings.HasPrefix(arg, `~\`) {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		if arg == "~" {
+			arg = home
+		} else {
+			arg = filepath.Join(home, arg[2:])
+		}
+	}
+	abs, err := filepath.Abs(arg)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Clean(abs), nil
+}
