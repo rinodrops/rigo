@@ -27,7 +27,7 @@ func diff_cmd() *cobra.Command {
 			out := cmd.OutOrStdout()
 
 			if len(args) == 1 {
-				e, ok := vault.Find(s.entries, args[0])
+				e, ok := vault.ResolveArg(s.entries, args[0])
 				if !ok {
 					return fmt.Errorf("%s is not a vault entry", args[0])
 				}

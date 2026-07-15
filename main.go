@@ -99,7 +99,7 @@ func setup(cmd *cobra.Command) (*session, error) {
 
 // pick resolves a path argument to a selected entry.
 func (s *session) pick(path string) (vault.Entry, error) {
-	e, ok := vault.Find(s.entries, path)
+	e, ok := vault.ResolveArg(s.entries, path)
 	if !ok {
 		return vault.Entry{}, fmt.Errorf("%s is not a vault entry", path)
 	}
@@ -129,7 +129,7 @@ func status_cmd() *cobra.Command {
 			}
 			entries := s.entries
 			if len(args) == 1 {
-				e, ok := vault.Find(entries, args[0])
+				e, ok := vault.ResolveArg(entries, args[0])
 				if !ok {
 					return fmt.Errorf("%s is not a vault entry", args[0])
 				}
