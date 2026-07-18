@@ -6,6 +6,10 @@
 
 Dotfiles manager for macOS, Linux, and Windows.
 
+Full documentation, including a step-by-step tutorial and command and
+configuration references, is available at
+<https://emotiongraphics.jp/docs/ref/rigo>.
+
 Rigo keeps the real files in a **vault** — a plain directory you sync
 across your machines with whatever tool you like (Syncthing, Dropbox,
 iCloud Drive, ...) — and symlinks them into place. Rigo itself never
