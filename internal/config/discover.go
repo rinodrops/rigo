@@ -64,9 +64,31 @@ func Discover() (string, string, error) {
 	return target, vault, nil
 }
 
+// ExpandHome expands a leading ~ (alone, ~/, or ~\) to the user's home
+// directory. Shells that do not expand ~ for external commands
+// (PowerShell among them) pass it through literally, so rigo handles it
+// itself. ~user forms pass through unchanged.
+func ExpandHome(arg string) (string, error) {
+	if arg != "~" && !strings.HasPrefix(arg, "~/") && !strings.HasPrefix(arg, `~\`) {
+		return arg, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	if arg == "~" {
+		return home, nil
+	}
+	return filepath.Join(home, arg[2:]), nil
+}
+
 // FromFile derives the config path and vault root from an explicitly
 // given rigo.toml path (the global -f flag).
 func FromFile(path string) (string, string, error) {
+	path, err := ExpandHome(path)
+	if err != nil {
+		return "", "", err
+	}
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return "", "", err
