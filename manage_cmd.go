@@ -46,7 +46,11 @@ func run_add(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	src, err := filepath.Abs(args[0])
+	src, err := config.ExpandHome(args[0])
+	if err != nil {
+		return err
+	}
+	src, err = filepath.Abs(src)
 	if err != nil {
 		return err
 	}
