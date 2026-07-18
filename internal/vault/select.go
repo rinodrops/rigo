@@ -75,7 +75,7 @@ func (s *Selection) Selected(e Entry) bool {
 
 // matches checks an effective include/exclude set: each item is a tag
 // name or a path. A path item matches the entry itself or, for
-// container directories, anything beneath it.
+// directories, anything beneath their path.
 func (s *Selection) matches(set map[string]bool, e Entry) bool {
 	for item := range set {
 		if paths, ok := s.cfg.Tags[item]; ok {

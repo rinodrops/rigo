@@ -73,7 +73,7 @@ func TestScanBasic(t *testing.T) {
 		".config/rigo/rigo.toml": "c",
 		".vim/vimrc":             "v", // dir-unit via dirs
 		".zsh/aliases.zsh":       "a", // dir-unit via tag
-		".claude/settings.json":  "s", // container
+		".claude/settings.json":  "s", // not a unit: scanned per file
 		".claude/local.json":     "l",
 		".DS_Store":              "junk",
 		".claude/.DS_Store":      "junk",
