@@ -145,6 +145,13 @@ from the matching section below (`just release-notes v1.0.0`).
 
 ## Release history
 
+### v1.0.2 — 2026-07-18
+
+Expand a leading `~` in the path arguments of `add` and the global
+`-f` flag, matching the other commands. Shells that pass `~` through
+to external commands literally (notably PowerShell) can now use the
+quick-start examples as written.
+
 ### v1.0.1 — 2026-07-16
 
 Fix path arguments for `status`, `link`, `unlink`, `forget`, and `diff`
