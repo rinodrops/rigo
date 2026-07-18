@@ -317,16 +317,9 @@ func ResolveArg(entries []Entry, arg string) (Entry, bool) {
 }
 
 func abs_arg(arg string) (string, error) {
-	if arg == "~" || strings.HasPrefix(arg, "~/") || strings.HasPrefix(arg, `~\`) {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		if arg == "~" {
-			arg = home
-		} else {
-			arg = filepath.Join(home, arg[2:])
-		}
+	arg, err := config.ExpandHome(arg)
+	if err != nil {
+		return "", err
 	}
 	abs, err := filepath.Abs(arg)
 	if err != nil {
