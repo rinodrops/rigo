@@ -6,6 +6,10 @@
 
 Dotfiles manager for macOS, Linux, and Windows.
 
+Full documentation, including a step-by-step tutorial and command and
+configuration references, is available at
+<https://emotiongraphics.jp/docs/ref/rigo>.
+
 Rigo keeps the real files in a **vault** — a plain directory you sync
 across your machines with whatever tool you like (Syncthing, Dropbox,
 iCloud Drive, ...) — and symlinks them into place. Rigo itself never
@@ -88,8 +92,8 @@ the vault — it is not a manifest. Everything below is optional:
 
 ```toml
 # Directories deployed as ONE symlink (new files inside follow
-# automatically). Anything not named here is a container: only the
-# files inside are managed individually.
+# automatically). For any directory not named here, only the files
+# inside are managed individually.
 dirs = [".hammerspoon/"]
 
 # Extra ignore patterns (gitignore-style globs against vault paths).
@@ -144,6 +148,13 @@ Releases are built by CI from version tags; the release notes are taken
 from the matching section below (`just release-notes v1.0.0`).
 
 ## Release history
+
+### v1.0.3 — 2026-07-19
+
+Reword user-facing text: the directory-add prompt and the `--files` help
+no longer use the term "container"; per-file handling is described
+directly. Link the full documentation site (tutorials, command and
+configuration references) from both READMEs.
 
 ### v1.0.2 — 2026-07-18
 

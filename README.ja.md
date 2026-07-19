@@ -6,6 +6,9 @@
 
 macOS・Linux・Windows対応のdotfiles管理ツール。
 
+チュートリアルとコマンド・設定リファレンスをまとめた詳しいドキュメントが
+<https://emotiongraphics.jp/docs/ja/ref/rigo> にあります。
+
 Rigoはdotfilesの実体を**Vault**（Syncthing・Dropbox・iCloud Driveなど
 お好みのツールでマシン間同期する，ただのディレクトリ）に置き，
 実際の場所へsymlinkを張ります。Rigo自身は同期機構に一切関知しません。
@@ -90,8 +93,8 @@ rigo forget ~/.zshrc
 
 ```toml
 # Directories deployed as ONE symlink (new files inside follow
-# automatically). Anything not named here is a container: only the
-# files inside are managed individually.
+# automatically). For any directory not named here, only the files
+# inside are managed individually.
 dirs = [".hammerspoon/"]
 
 # Extra ignore patterns (gitignore-style globs against vault paths).
@@ -146,6 +149,13 @@ just help     # list all recipes
 英語版READMEの該当節から抽出されます（`just release-notes v1.0.0`）。
 
 ## リリース履歴
+
+### v1.0.3 — 2026-07-19
+
+ユーザー向け文言の整理: ディレクトリ追加時のプロンプトと `--files` の
+ヘルプから「container」の語を廃し，ファイル個別の扱いを直接説明する
+表現に変更。また両READMEの冒頭からドキュメントサイト（チュートリアル・
+コマンド／設定リファレンス）へリンクした。
 
 ### v1.0.2 — 2026-07-18
 

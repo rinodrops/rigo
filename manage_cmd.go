@@ -24,7 +24,7 @@ func add_cmd() *cobra.Command {
 	}
 	cmd.Flags().Bool("os", false, "place the entry under the OS-specific layer")
 	cmd.Flags().Bool("dir", false, "deploy a directory as one symlink (recorded in rigo.toml)")
-	cmd.Flags().Bool("files", false, "treat a directory as a container: move and link each file")
+	cmd.Flags().Bool("files", false, "move and link each file inside individually")
 	cmd.Flags().String("tag", "", "record the entry as a member of this tag")
 	cmd.Flags().Bool("keep-symlink", false, "store a symlink source as-is instead of adopting its referent")
 	cmd.Flags().String("volume", "", "named volume for a Windows path on a non-system drive")
@@ -115,7 +115,7 @@ func run_add(cmd *cobra.Command, args []string) error {
 
 	switch {
 	case is_dir && flag_files:
-		moved, err := add_container(s, route, src, keep, out)
+		moved, err := add_files(s, route, src, keep, out)
 		if err != nil {
 			return err
 		}
@@ -168,9 +168,9 @@ func run_add(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// add_container moves each file inside src into the vault individually
+// add_files moves each file inside src into the vault individually
 // (the directory itself stays real) and returns the logical paths.
-func add_container(s *session, route vault.Route, src string, keep bool, out io.Writer) ([]string, error) {
+func add_files(s *session, route vault.Route, src string, keep bool, out io.Writer) ([]string, error) {
 	var moved []string
 	err := filepath.WalkDir(src, func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
@@ -258,7 +258,7 @@ func choose_volume(cmd *cobra.Command, s *session, route vault.Route, flag strin
 	return name, name, nil
 }
 
-// ask_dir_mode asks whether a directory deploys whole or as a container.
+// ask_dir_mode asks whether a directory deploys whole or as individual files.
 func ask_dir_mode(cmd *cobra.Command) (string, error) {
 	if !stdin_is_tty() {
 		return "", fmt.Errorf("the path is a directory; pass --dir (one symlink) or --files (link each file)")
@@ -267,7 +267,7 @@ func ask_dir_mode(cmd *cobra.Command) (string, error) {
 	in := bufio.NewScanner(cmd.InOrStdin())
 	for {
 		fmt.Fprintln(out, "  d) whole directory: one symlink, new files follow automatically")
-		fmt.Fprintln(out, "  f) container: move and link each file individually")
+		fmt.Fprintln(out, "  f) files: move and link each file individually")
 		fmt.Fprintln(out, "  a) abort")
 		fmt.Fprint(out, "choice: ")
 		if !in.Scan() {

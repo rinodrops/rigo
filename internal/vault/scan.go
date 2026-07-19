@@ -189,7 +189,7 @@ func (s *scanner) layer(dir string, os_layer, abs bool) error {
 			s.add(logical, p, true, os_layer, abs)
 			return filepath.SkipDir
 		case d.IsDir():
-			return nil // container: descend
+			return nil // not a unit: descend into it
 		case declared && s.decls.slashed[logical]:
 			return fmt.Errorf("%s is declared with a trailing slash but is a file in the vault", logical)
 		case declared && s.decls.in_dirs[logical]:
