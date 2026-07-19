@@ -6,6 +6,9 @@
 
 macOS・Linux・Windows対応のdotfiles管理ツール。
 
+チュートリアルとコマンド・設定リファレンスをまとめた詳しいドキュメントが
+<https://emotiongraphics.jp/docs/ja/ref/rigo> にあります。
+
 Rigoはdotfilesの実体を**Vault**（Syncthing・Dropbox・iCloud Driveなど
 お好みのツールでマシン間同期する，ただのディレクトリ）に置き，
 実際の場所へsymlinkを張ります。Rigo自身は同期機構に一切関知しません。
