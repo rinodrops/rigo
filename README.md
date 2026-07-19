@@ -88,8 +88,8 @@ the vault — it is not a manifest. Everything below is optional:
 
 ```toml
 # Directories deployed as ONE symlink (new files inside follow
-# automatically). Anything not named here is a container: only the
-# files inside are managed individually.
+# automatically). For any directory not named here, only the files
+# inside are managed individually.
 dirs = [".hammerspoon/"]
 
 # Extra ignore patterns (gitignore-style globs against vault paths).

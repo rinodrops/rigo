@@ -55,7 +55,7 @@ func TestSelectExcludeMode(t *testing.T) {
 		t.Error(".vimrc should be selected on macbook")
 	}
 
-	// mini excludes a container directory: files beneath it follow.
+	// mini excludes a plain directory: files beneath it follow.
 	sel = Select(cfg, "mini")
 	if sel.Selected(entries["ssh_conf"]) {
 		t.Error(".ssh/config should be excluded via the .ssh prefix")
