@@ -149,6 +149,13 @@ from the matching section below (`just release-notes v1.0.0`).
 
 ## Release history
 
+### v1.0.3 — 2026-07-19
+
+Reword user-facing text: the directory-add prompt and the `--files` help
+no longer use the term "container"; per-file handling is described
+directly. Link the full documentation site (tutorials, command and
+configuration references) from both READMEs.
+
 ### v1.0.2 — 2026-07-18
 
 Expand a leading `~` in the path arguments of `add` and the global
