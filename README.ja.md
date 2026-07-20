@@ -77,6 +77,7 @@ rigo forget ~/.zshrc
 | `rigo tag link/unlink/show <name>`          | tag単位の一括操作                                                                                          |
 | `rigo trash ls/restore/empty`               | trashの一覧・Vaultへの復元・完全削除                                                                        |
 | `rigo secrets apply/status/remove [<path>]` | パスワードマネージャーからの機微情報の書き出し（1Passwordの`op://`参照）                                     |
+| `rigo version`                              | バージョンとos/archの表示（`--version`・`-v`も可）                                                          |
 | `rigo -f <path> <command>`                  | 初回ブートストラップ: Vault内の`rigo.toml`を直接指定                                                        |
 
 エントリの状態は `linked`・`pending`・`unlinked`・`conflict`・`broken`
