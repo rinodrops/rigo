@@ -151,6 +151,12 @@ just help     # list all recipes
 
 ## リリース履歴
 
+### v1.0.4 — 2026-07-20
+
+Go製CLIの慣習に合わせて `version` サブコマンドを追加。
+`rigo version`・`--version`・`-v` の3通りすべてが，os/archを後置した
+同一の行（例: `rigo version 1.0.4 darwin/arm64`）を表示します。
+
 ### v1.0.3 — 2026-07-19
 
 ユーザー向け文言の整理: ディレクトリ追加時のプロンプトと `--files` の

@@ -150,6 +150,13 @@ from the matching section below (`just release-notes v1.0.0`).
 
 ## Release history
 
+### v1.0.4 — 2026-07-20
+
+Add a `version` subcommand following the common Go CLI convention.
+All three invocations (`rigo version`, `--version`, `-v`) print the
+same line with the os/arch appended, for example
+`rigo version 1.0.4 darwin/arm64`.
+
 ### v1.0.3 — 2026-07-19
 
 Reword user-facing text: the directory-add prompt and the `--files` help
