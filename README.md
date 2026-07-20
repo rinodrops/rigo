@@ -77,6 +77,7 @@ rigo forget ~/.zshrc
 | `rigo tag link/unlink/show <name>`          | Bulk operations on tagged groups                                                                                     |
 | `rigo trash ls/restore/empty`               | Inspect, restore, or purge trashed vault entries                                                                     |
 | `rigo secrets apply/status/remove [<path>]` | Materialize secrets from a password manager (1Password `op://` refs)                                                 |
+| `rigo version`                              | Print the version and os/arch (also `--version` / `-v`)                                                              |
 | `rigo -f <path> <command>`                  | First-run bootstrap: name the `rigo.toml` inside the vault directly                                                  |
 
 Entry states: `linked`, `pending`, `unlinked`, `conflict`, `broken`
@@ -148,6 +149,13 @@ Releases are built by CI from version tags; the release notes are taken
 from the matching section below (`just release-notes v1.0.0`).
 
 ## Release history
+
+### v1.0.4 — 2026-07-20
+
+Add a `version` subcommand following the common Go CLI convention.
+All three invocations (`rigo version`, `--version`, `-v`) print the
+same line with the os/arch appended, for example
+`rigo version 1.0.4 darwin/arm64`.
 
 ### v1.0.3 — 2026-07-19
 

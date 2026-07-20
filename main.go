@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -18,11 +19,28 @@ import (
 // diff_auto_show is the largest diff (in lines) printed without asking.
 const diff_auto_show = 40
 
+// version_string is what all three invocations (version, --version, -v)
+// print after "rigo version ".
+func version_string() string {
+	return fmt.Sprintf("%s %s/%s", Version, runtime.GOOS, runtime.GOARCH)
+}
+
+func version_cmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print the rigo version",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, _ []string) {
+			fmt.Fprintf(cmd.OutOrStdout(), "rigo version %s\n", version_string())
+		},
+	}
+}
+
 func main() {
 	root := &cobra.Command{
 		Use:           "rigo",
 		Short:         "Dotfiles manager: vault + symlink",
-		Version:       Version,
+		Version:       version_string(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -30,7 +48,7 @@ func main() {
 		"path to rigo.toml inside the vault (first-run bootstrap)")
 	root.AddCommand(status_cmd(), apply_cmd(), link_cmd(), unlink_cmd(),
 		add_cmd(), forget_cmd(), clean_cmd(), trash_cmd(), tag_cmd(), diff_cmd(),
-		secrets_cmd())
+		secrets_cmd(), version_cmd())
 
 	if err := root.Execute(); err != nil {
 		// diff exits 1 on differences, like diff(1), without a message.

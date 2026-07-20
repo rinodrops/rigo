@@ -77,6 +77,7 @@ rigo forget ~/.zshrc
 | `rigo tag link/unlink/show <name>`          | tag単位の一括操作                                                                                          |
 | `rigo trash ls/restore/empty`               | trashの一覧・Vaultへの復元・完全削除                                                                        |
 | `rigo secrets apply/status/remove [<path>]` | パスワードマネージャーからの機微情報の書き出し（1Passwordの`op://`参照）                                     |
+| `rigo version`                              | バージョンとos/archの表示（`--version`・`-v`も可）                                                          |
 | `rigo -f <path> <command>`                  | 初回ブートストラップ: Vault内の`rigo.toml`を直接指定                                                        |
 
 エントリの状態は `linked`・`pending`・`unlinked`・`conflict`・`broken`
@@ -149,6 +150,12 @@ just help     # list all recipes
 英語版READMEの該当節から抽出されます（`just release-notes v1.0.0`）。
 
 ## リリース履歴
+
+### v1.0.4 — 2026-07-20
+
+Go製CLIの慣習に合わせて `version` サブコマンドを追加。
+`rigo version`・`--version`・`-v` の3通りすべてが，os/archを後置した
+同一の行（例: `rigo version 1.0.4 darwin/arm64`）を表示します。
 
 ### v1.0.3 — 2026-07-19
 
