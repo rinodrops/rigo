@@ -77,6 +77,7 @@ rigo forget ~/.zshrc
 | `rigo tag link/unlink/show <name>`          | Bulk operations on tagged groups                                                                                     |
 | `rigo trash ls/restore/empty`               | Inspect, restore, or purge trashed vault entries                                                                     |
 | `rigo secrets apply/status/remove [<path>]` | Materialize secrets from a password manager (1Password `op://` refs)                                                 |
+| `rigo version`                              | Print the version and os/arch (also `--version` / `-v`)                                                              |
 | `rigo -f <path> <command>`                  | First-run bootstrap: name the `rigo.toml` inside the vault directly                                                  |
 
 Entry states: `linked`, `pending`, `unlinked`, `conflict`, `broken`
