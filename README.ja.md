@@ -177,6 +177,17 @@ just help     # list all recipes
 
 ## リリース履歴
 
+### v1.1.0 — 2026-07-22
+
+同じGOOS（しばしば同じディストロID）でも実行環境が異なるクラス向けに，
+OS flavourオーバーレイを追加。最初のビルトインは `wsl` で，
+`.os/linux/.flavour/wsl/` に置き，実行時にWSLを検知し，
+`rigo add --flavour wsl` で格納できる。走査順（後段勝ち）は
+common → OS → distro → flavour。`[include]` / `[exclude]` と
+flavourの使い分けもREADMEに記載。あわせてstatus/applyの内容比較を
+ストリーム化，Windowsのsymlink可否を事前に1回プローブするよう改善し，
+volumesとCLIヘルパーのテストを拡充した。
+
 ### v1.0.4 — 2026-07-20
 
 Go製CLIの慣習に合わせて `version` サブコマンドを追加。

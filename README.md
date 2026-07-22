@@ -181,6 +181,17 @@ from the matching section below (`just release-notes v1.0.0`).
 
 ## Release history
 
+### v1.1.0 — 2026-07-22
+
+Add OS flavour overlays for environment classes that share a GOOS (and
+often a distro ID) but need different files. The first built-in flavour
+is `wsl`: place entries under `.os/linux/.flavour/wsl/`, detect WSL at
+runtime, and store with `rigo add --flavour wsl`. Layer order (later
+wins) is common → OS → distro → flavour. Document when to use
+`[include]` / `[exclude]` versus flavours. Also stream file comparisons
+for status/apply, probe Windows symlink capability once before linking,
+and expand unit tests around volumes and CLI helpers.
+
 ### v1.0.4 — 2026-07-20
 
 Add a `version` subcommand following the common Go CLI convention.
