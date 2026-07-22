@@ -3,6 +3,7 @@ package vault
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -29,6 +30,18 @@ func Compare(e Entry) (Diff, error) {
 }
 
 func compare_files(vault_path, target string) (Diff, error) {
+	vault_bin, err := file_is_binary(vault_path)
+	if err != nil {
+		return Diff{}, err
+	}
+	local_bin, err := file_is_binary(target)
+	if err != nil {
+		return Diff{}, err
+	}
+	if vault_bin || local_bin {
+		return Diff{Stat: "binary files differ"}, nil
+	}
+
 	vault_data, err := os.ReadFile(vault_path)
 	if err != nil {
 		return Diff{}, err
@@ -36,9 +49,6 @@ func compare_files(vault_path, target string) (Diff, error) {
 	local_data, err := os.ReadFile(target)
 	if err != nil {
 		return Diff{}, err
-	}
-	if is_binary(vault_data) || is_binary(local_data) {
-		return Diff{Stat: "binary files differ"}, nil
 	}
 
 	unified := udiff.Unified("vault", "local", string(vault_data), string(local_data))
@@ -115,11 +125,18 @@ func compare_trees(vault_path, target string) (Diff, error) {
 	}, nil
 }
 
-// is_binary applies the git heuristic: a NUL byte in the first 8000
-// bytes marks the content as binary.
-func is_binary(data []byte) bool {
-	if len(data) > 8000 {
-		data = data[:8000]
+// file_is_binary applies the git heuristic against the first 8000
+// bytes of path without reading the whole file.
+func file_is_binary(path string) (bool, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return false, err
 	}
-	return bytes.IndexByte(data, 0) >= 0
+	defer f.Close()
+	buf := make([]byte, 8000)
+	n, err := io.ReadFull(f, buf)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		return false, err
+	}
+	return bytes.IndexByte(buf[:n], 0) >= 0, nil
 }

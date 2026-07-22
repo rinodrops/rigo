@@ -17,29 +17,40 @@ type Route struct {
 	Drive       string // lowercase drive letter of the source path
 	Suggest     string // volume name to offer as the interactive default
 	rest        string // path below the drive, slash-separated
+	os_prefix   string // ".os/<goos>/" or ".os/<goos>/.flavour/<name>/"
 }
 
 // Plan computes the vault destination for the real path p (absolute,
-// existing). os_specific forces the .os/<goos>/ layer. For a Windows
-// path on a non-system drive, the returned route has NeedsVolume set
-// and must be completed with WithVolume; rigo never guesses the
-// volume.
-func Plan(cfg *config.Config, h Host, volumes map[string]string, p string, os_specific bool) (Route, error) {
+// existing). os_specific forces the .os/<goos>/ layer. flavour (when
+// non-empty) places the entry under .os/<goos>/.flavour/<name>/ and
+// implies an OS-specific layer. For a Windows path on a non-system
+// drive, the returned route has NeedsVolume set and must be completed
+// with WithVolume; rigo never guesses the volume.
+func Plan(cfg *config.Config, h Host, volumes map[string]string, p string, os_specific bool, flavour string) (Route, error) {
 	p = filepath.Clean(p)
 	if strings.HasPrefix(p, `\\`) {
 		return Route{}, fmt.Errorf("%s: UNC paths are not supported", p)
 	}
+	if flavour != "" {
+		if !KnownFlavour(flavour) {
+			return Route{}, fmt.Errorf("unknown OS flavour %q", flavour)
+		}
+		os_specific = true
+	}
 
 	os_prefix := cfg.OSDir + "/" + h.GOOS + "/"
+	if flavour != "" {
+		os_prefix += cfg.FlavourDir + "/" + flavour + "/"
+	}
 
 	// Windows profile sections live inside the home directory, so they
 	// must be checked first; they are inherently OS-specific.
 	if h.GOOS == "windows" {
 		if rel, ok := under(h.AppData, p); ok {
-			return Route{Logical: ".appdata/" + rel, VaultRel: os_prefix + ".appdata/" + rel}, nil
+			return Route{Logical: ".appdata/" + rel, VaultRel: os_prefix + ".appdata/" + rel, os_prefix: os_prefix}, nil
 		}
 		if rel, ok := under(h.LocalAppData, p); ok {
-			return Route{Logical: ".local/" + rel, VaultRel: os_prefix + ".local/" + rel}, nil
+			return Route{Logical: ".local/" + rel, VaultRel: os_prefix + ".local/" + rel, os_prefix: os_prefix}, nil
 		}
 	}
 
@@ -51,7 +62,7 @@ func Plan(cfg *config.Config, h Host, volumes map[string]string, p string, os_sp
 	}
 	if logical != "" {
 		if os_specific {
-			return Route{Logical: logical, VaultRel: os_prefix + logical}, nil
+			return Route{Logical: logical, VaultRel: os_prefix + logical, os_prefix: os_prefix}, nil
 		}
 		return Route{Logical: logical, VaultRel: logical}, nil
 	}
@@ -59,7 +70,7 @@ func Plan(cfg *config.Config, h Host, volumes map[string]string, p string, os_sp
 	// Outside home: always .abs, inherently OS-specific.
 	if h.GOOS != "windows" {
 		rest := strings.TrimPrefix(filepath.ToSlash(p), "/")
-		return Route{Logical: p, VaultRel: os_prefix + cfg.AbsDir + "/" + rest}, nil
+		return Route{Logical: p, VaultRel: os_prefix + cfg.AbsDir + "/" + rest, os_prefix: os_prefix}, nil
 	}
 
 	// filepath.VolumeName only understands drive letters when compiled
@@ -70,7 +81,7 @@ func Plan(cfg *config.Config, h Host, volumes map[string]string, p string, os_sp
 		return Route{}, fmt.Errorf("%s: absolute Windows paths must carry a drive letter", p)
 	}
 	rest := strings.TrimPrefix(filepath.ToSlash(p[2:]), "/")
-	r := Route{Drive: drive, rest: rest}
+	r := Route{Drive: drive, rest: rest, os_prefix: os_prefix}
 	if drive == system_letter(h) {
 		return r.WithVolume(cfg, h, "system"), nil
 	}
@@ -81,8 +92,12 @@ func Plan(cfg *config.Config, h Host, volumes map[string]string, p string, os_sp
 
 // WithVolume completes a Windows absolute route with the chosen volume.
 func (r Route) WithVolume(cfg *config.Config, h Host, name string) Route {
+	prefix := r.os_prefix
+	if prefix == "" {
+		prefix = cfg.OSDir + "/" + h.GOOS + "/"
+	}
 	r.Logical = name + ":/" + r.rest
-	r.VaultRel = cfg.OSDir + "/" + h.GOOS + "/" + cfg.AbsDir + "/" + name + "/" + r.rest
+	r.VaultRel = prefix + cfg.AbsDir + "/" + name + "/" + r.rest
 	r.NeedsVolume = false
 	return r
 }

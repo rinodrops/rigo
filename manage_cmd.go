@@ -23,6 +23,7 @@ func add_cmd() *cobra.Command {
 		RunE:  run_add,
 	}
 	cmd.Flags().Bool("os", false, "place the entry under the OS-specific layer")
+	cmd.Flags().String("flavour", "", "place the entry under an OS flavour layer (e.g. wsl)")
 	cmd.Flags().Bool("dir", false, "deploy a directory as one symlink (recorded in rigo.toml)")
 	cmd.Flags().Bool("files", false, "move and link each file inside individually")
 	cmd.Flags().String("tag", "", "record the entry as a member of this tag")
@@ -33,6 +34,7 @@ func add_cmd() *cobra.Command {
 
 func run_add(cmd *cobra.Command, args []string) error {
 	flag_os, _ := cmd.Flags().GetBool("os")
+	flavour, _ := cmd.Flags().GetString("flavour")
 	flag_dir, _ := cmd.Flags().GetBool("dir")
 	flag_files, _ := cmd.Flags().GetBool("files")
 	tag, _ := cmd.Flags().GetString("tag")
@@ -40,6 +42,9 @@ func run_add(cmd *cobra.Command, args []string) error {
 	flag_volume, _ := cmd.Flags().GetString("volume")
 	if flag_dir && flag_files {
 		return fmt.Errorf("--dir and --files are mutually exclusive")
+	}
+	if flag_os && flavour != "" {
+		return fmt.Errorf("--os and --flavour are mutually exclusive")
 	}
 
 	s, err := setup(cmd)
@@ -63,7 +68,7 @@ func run_add(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s is inside the vault", src)
 	}
 
-	route, err := vault.Plan(s.cfg, s.host, s.volumes, src, flag_os)
+	route, err := vault.Plan(s.cfg, s.host, s.volumes, src, flag_os, flavour)
 	if err != nil {
 		return err
 	}

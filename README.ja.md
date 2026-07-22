@@ -70,7 +70,7 @@ rigo forget ~/.zshrc
 | `rigo status [<path>]`                      | 管理対象エントリの状態を表示                                                                                |
 | `rigo link <path>`                          | 1エントリをlink（conflict時は対話，`--force`でVault優先）                                                   |
 | `rigo unlink <path>`                        | 一時的に実体化（Vault側は保持，管理は継続）                                                                 |
-| `rigo add <path>`                           | 実体をVaultへ移動してlink（`--os`，`--dir`/`--files`，`--tag`，`--keep-symlink`，`--volume`）              |
+| `rigo add <path>`                           | 実体をVaultへ移動してlink（`--os`，`--flavour`，`--dir`/`--files`，`--tag`，`--keep-symlink`，`--volume`） |
 | `rigo forget <path>`                        | 管理をやめる: ローカルに実体化し，Vault側はtrashへ移動                                                     |
 | `rigo diff [<path>]`                        | 実体とVaultの差分表示（読み取り専用。差分があれば終了コード1）                                              |
 | `rigo clean`                                | 壊れたリンクの掃除（trashからの復元を提示）                                                                |
@@ -118,6 +118,12 @@ servers = ["zsh", ".gitconfig"]
 [exclude]                    # host/group → these do NOT deploy
 work = ["vim"]
 
+# Optional renames for vault structural directories (defaults shown):
+# os_dir = ".os"
+# abs_dir = ".abs"
+# trash_dir = ".trash"
+# flavour_dir = ".flavour"
+
 [volumes]                    # named volumes for Windows drives:
 data = { default = "d", workpc = "e" }
 # vault/.os/windows/.abs/data/Tools/x.ini → D:\Tools\x.ini (E:\ on workpc).
@@ -130,8 +136,28 @@ data = { default = "d", workpc = "e" }
 
 OS固有のエントリは `vault/.os/<darwin|linux|windows>/` 配下に，
 同じくホームの鏡写しとして置きます。ホーム外の絶対パスは
-`.os/<goos>/.abs/` 配下です。マシンの識別子はホスト名の最初の
-ドットまでを小文字化したもので，`rigo status` のヘッダで確認できます。
+`.os/<goos>/.abs/` 配下です。Linuxのディストロオーバーレイは
+`distros` に列挙した名前で `.os/linux/<id>/` 配下です。
+
+**OS flavour** は，同じGOOS（しばしば同じディストロID）でも実行環境が
+異なるクラス向けです。現時点のビルトインは `wsl` のみで，
+`.os/<goos>/.flavour/<name>/`（例: `.os/linux/.flavour/wsl/`）に置きます。
+WSLの検知は `/proc/sys/fs/binfmt_misc/WSLInterop`，`/run/WSL`，または
+`/proc/sys/kernel/osrelease` に `microsoft` を含むかです。走査順（同一
+論理パスは後段が勝つ）は common → OS → distro → flavour です。
+配置は `rigo add --flavour wsl <path>`（`--os` だけでは
+`.os/<goos>/` のまま。自動では flavour 層へ送りません）。
+`rigo status` は検知した flavour を表示します。
+
+**選択的展開**（`[include]` / `[exclude]`）はホスト／グループ向けです:
+
+- `[include]` は許可リスト — 一度でもincludeがあると，列挙したものだけが展開されます。大部分が共通な構成には向きません。
+- `[exclude]` は拒否リスト — 「ほぼ全部，一部だけ外す」向きです。
+- WSLと素のUbuntuのような環境クラス差は，include/excludeではなく flavour（またはディストロ）オーバーレイを使います。
+- 「特定ホストにだけ載せる」肯定形の選択は未対応です（将来検討）。
+
+マシンの識別子はホスト名の最初のドットまでを小文字化したもので，
+`rigo status` のヘッダで確認できます。
 
 ## 開発
 
@@ -150,6 +176,17 @@ just help     # list all recipes
 英語版READMEの該当節から抽出されます（`just release-notes v1.0.0`）。
 
 ## リリース履歴
+
+### v1.1.0 — 2026-07-22
+
+同じGOOS（しばしば同じディストロID）でも実行環境が異なるクラス向けに，
+OS flavourオーバーレイを追加。最初のビルトインは `wsl` で，
+`.os/linux/.flavour/wsl/` に置き，実行時にWSLを検知し，
+`rigo add --flavour wsl` で格納できる。走査順（後段勝ち）は
+common → OS → distro → flavour。`[include]` / `[exclude]` と
+flavourの使い分けもREADMEに記載。あわせてstatus/applyの内容比較を
+ストリーム化，Windowsのsymlink可否を事前に1回プローブするよう改善し，
+volumesとCLIヘルパーのテストを拡充した。
 
 ### v1.0.4 — 2026-07-20
 

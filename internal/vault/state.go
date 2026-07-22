@@ -3,6 +3,7 @@ package vault
 import (
 	"bytes"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -144,13 +145,38 @@ func equal_file(a, b string) (bool, error) {
 	if fa.Size() != fb.Size() {
 		return false, nil
 	}
-	da, err := os.ReadFile(a)
+	ra, err := os.Open(a)
 	if err != nil {
 		return false, err
 	}
-	db, err := os.ReadFile(b)
+	defer ra.Close()
+	rb, err := os.Open(b)
 	if err != nil {
 		return false, err
 	}
-	return bytes.Equal(da, db), nil
+	defer rb.Close()
+
+	bufa := make([]byte, 32*1024)
+	bufb := make([]byte, 32*1024)
+	for {
+		na, ea := ra.Read(bufa)
+		nb, eb := rb.Read(bufb)
+		if na > 0 || nb > 0 {
+			if na != nb || !bytes.Equal(bufa[:na], bufb[:nb]) {
+				return false, nil
+			}
+		}
+		if ea == io.EOF && eb == io.EOF {
+			return true, nil
+		}
+		if ea != nil && ea != io.EOF {
+			return false, ea
+		}
+		if eb != nil && eb != io.EOF {
+			return false, eb
+		}
+		if ea == io.EOF || eb == io.EOF {
+			return false, nil // one ended early despite equal sizes
+		}
+	}
 }

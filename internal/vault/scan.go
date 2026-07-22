@@ -76,7 +76,7 @@ func Scan(root string, cfg *config.Config, host Host) ([]Entry, []string, error)
 	}
 
 	// Later layers override earlier ones on the same logical path:
-	// common < OS-specific < distro-specific.
+	// common < OS-specific < distro-specific < flavour.
 	if err := s.layer(root, false, false); err != nil {
 		return nil, nil, err
 	}
@@ -100,6 +100,9 @@ func Scan(root string, cfg *config.Config, host Host) ([]Entry, []string, error)
 			s.warn("%s/%s/%s matches this host's distro but is not declared in distros, so it is treated as home content",
 				cfg.OSDir, host.GOOS, host.Distro)
 		}
+	}
+	if err := s.scan_flavours(os_root); err != nil {
+		return nil, nil, err
 	}
 
 	if err := s.check_nesting(); err != nil {
@@ -201,9 +204,44 @@ func (s *scanner) layer(dir string, os_layer, abs bool) error {
 	})
 }
 
+// scan_flavours walks .flavour/<name>/ for this host and warns about
+// unknown flavour directory names.
+func (s *scanner) scan_flavours(os_root string) error {
+	flavour_root := filepath.Join(os_root, s.cfg.FlavourDir)
+	items, err := os.ReadDir(flavour_root)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		if !item.IsDir() {
+			continue
+		}
+		name := item.Name()
+		if !KnownFlavour(name) {
+			s.warn("%s/%s/%s/%s is not a built-in OS flavour and is ignored",
+				s.cfg.OSDir, s.host.GOOS, s.cfg.FlavourDir, name)
+			continue
+		}
+		if name != s.host.Flavour {
+			continue
+		}
+		fl_root := filepath.Join(flavour_root, name)
+		if err := s.layer(fl_root, true, false); err != nil {
+			return err
+		}
+		if err := s.layer(filepath.Join(fl_root, s.cfg.AbsDir), true, true); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // skip_special hides structural directories from the walk: the trash
-// and .os dirs at the vault root, the .abs and distro dirs inside an
-// OS layer (they are scanned as separate layers).
+// and .os dirs at the vault root, the .abs, .flavour, and distro dirs
+// inside an OS layer (they are scanned as separate layers).
 func (s *scanner) skip_special(layer_root, p, logical string, os_layer, abs bool) bool {
 	if strings.Contains(logical, "/") {
 		return false
@@ -214,7 +252,7 @@ func (s *scanner) skip_special(layer_root, p, logical string, os_layer, abs bool
 	if abs {
 		return false
 	}
-	if logical == s.cfg.AbsDir {
+	if logical == s.cfg.AbsDir || logical == s.cfg.FlavourDir {
 		return true
 	}
 	// Inside .os/linux/, first-level directories declared in distros
