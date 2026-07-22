@@ -70,7 +70,7 @@ rigo forget ~/.zshrc
 | `rigo status [<path>]`                      | Show the state of managed entries                                                                                    |
 | `rigo link <path>`                          | Link one entry (interactive on conflict; `--force` prefers the vault)                                                |
 | `rigo unlink <path>`                        | Materialize locally for a while (the vault copy is kept)                                                             |
-| `rigo add <path>`                           | Move real content into the vault and link it back (`--os`, `--dir`/`--files`, `--tag`, `--keep-symlink`, `--volume`) |
+| `rigo add <path>`                           | Move real content into the vault and link it back (`--os`, `--flavour`, `--dir`/`--files`, `--tag`, `--keep-symlink`, `--volume`) |
 | `rigo forget <path>`                        | Stop managing: materialize locally, move the vault copy to the trash                                                 |
 | `rigo diff [<path>]`                        | Show differences between local files and the vault (read-only; exit 1 when they differ)                              |
 | `rigo clean`                                | Clean up broken links, offering restores from the trash                                                              |
@@ -117,6 +117,12 @@ servers = ["zsh", ".gitconfig"]
 [exclude]                    # host/group → these do NOT deploy
 work = ["vim"]
 
+# Optional renames for vault structural directories (defaults shown):
+# os_dir = ".os"
+# abs_dir = ".abs"
+# trash_dir = ".trash"
+# flavour_dir = ".flavour"
+
 [volumes]                    # named volumes for Windows drives:
 data = { default = "d", workpc = "e" }
 # vault/.os/windows/.abs/data/Tools/x.ini → D:\Tools\x.ini (E:\ on workpc).
@@ -129,8 +135,33 @@ data = { default = "d", workpc = "e" }
 
 OS-specific entries live under `vault/.os/<darwin|linux|windows>/`,
 mirroring home the same way. Absolute paths outside home go under
-`.os/<goos>/.abs/`. The host a machine identifies as is its hostname up
-to the first dot, lowercased (`rigo status` shows it).
+`.os/<goos>/.abs/`. Linux distro overlays live under
+`.os/linux/<id>/` when listed in `distros`.
+
+**OS flavours** cover environment classes that share a GOOS (and often
+a distro ID) but need different files — today the only built-in is
+`wsl`. Place them under `.os/<goos>/.flavour/<name>/` (for example
+`.os/linux/.flavour/wsl/`). Rigo detects WSL via
+`/proc/sys/fs/binfmt_misc/WSLInterop`, `/run/WSL`, or `microsoft` in
+`/proc/sys/kernel/osrelease`. Layer order (later wins on the same
+logical path): common → OS → distro → flavour. Use
+`rigo add --flavour wsl <path>` to store under the flavour layer;
+`--os` alone still means `.os/<goos>/` and does not auto-route to a
+flavour. `rigo status` shows the detected flavour when present.
+
+**Selective deployment** (`[include]` / `[exclude]`) is host/group
+oriented:
+
+- `[include]` is an allowlist — once a host has any include entries,
+  only those paths/tags deploy. Poor fit when most files are shared.
+- `[exclude]` is a denylist — good for “almost everything, omit a few.”
+- For environment-class differences (WSL vs bare metal, etc.), prefer
+  flavour (or distro) overlays in the vault tree, not include/exclude.
+- There is no affirmative “only these hosts” selector yet; host-group
+  allowlisting of individual paths is a future consideration.
+
+The host a machine identifies as is its hostname up to the first dot,
+lowercased (`rigo status` shows it).
 
 ## Development
 

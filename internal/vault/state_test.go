@@ -122,3 +122,44 @@ func TestDetectDirTargetIsFile(t *testing.T) {
 	}
 	expect_state(t, e, Conflict)
 }
+
+func TestEqualFileStream(t *testing.T) {
+	dir := t.TempDir()
+	a := filepath.Join(dir, "a")
+	b := filepath.Join(dir, "b")
+	c := filepath.Join(dir, "c")
+
+	// Larger than the read buffer to exercise multiple chunks.
+	payload := make([]byte, 100*1024)
+	for i := range payload {
+		payload[i] = byte(i)
+	}
+	if err := os.WriteFile(a, payload, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(b, payload, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	payload[50*1024] ^= 0xff
+	if err := os.WriteFile(c, payload, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	ok, err := equal_file(a, b)
+	if err != nil || !ok {
+		t.Fatalf("equal: ok=%v err=%v", ok, err)
+	}
+	ok, err = equal_file(a, c)
+	if err != nil || ok {
+		t.Fatalf("differ: ok=%v err=%v", ok, err)
+	}
+
+	short := filepath.Join(dir, "short")
+	if err := os.WriteFile(short, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ok, err = equal_file(a, short)
+	if err != nil || ok {
+		t.Fatalf("size mismatch: ok=%v err=%v", ok, err)
+	}
+}

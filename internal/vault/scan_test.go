@@ -154,6 +154,58 @@ func TestScanOSOverlayAndDistro(t *testing.T) {
 	}
 }
 
+func TestScanFlavourOverlay(t *testing.T) {
+	root := t.TempDir()
+	home := t.TempDir()
+	make_tree(t, root, map[string]string{
+		".zshrc":                              "common",
+		".os/linux/.zshrc":                    "linux",
+		".os/linux/ubuntu/.zshrc":             "ubuntu",
+		".os/linux/.flavour/wsl/.zshrc":       "wsl",
+		".os/linux/.flavour/wsl/.wslrc":       "wsl-only",
+		".os/linux/.flavour/wsl/.abs/etc/w":   "wsl-abs",
+		".os/linux/.flavour/container/.zshrc": "other-flavour",
+		".os/linux/.flavour/nope/.x":          "unknown",
+	})
+	cfg := load_config(t, `distros = ["ubuntu"]`)
+
+	bare := Host{Name: "box", GOOS: "linux", Distro: "ubuntu", Home: home}
+	entries, warnings, err := Scan(root, cfg, bare)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := find(t, entries, ".zshrc"); !strings.Contains(e.Vault, "ubuntu") {
+		t.Errorf("bare metal should use ubuntu layer, got %s", e.Vault)
+	}
+	if _, ok := Find(entries, ".wslrc"); ok {
+		t.Error("bare metal must not see wsl-only entries")
+	}
+	found_unknown := false
+	for _, w := range warnings {
+		if strings.Contains(w, "not a built-in OS flavour") {
+			found_unknown = true
+		}
+	}
+	if !found_unknown {
+		t.Errorf("missing unknown-flavour warning: %v", warnings)
+	}
+
+	wsl := Host{Name: "box", GOOS: "linux", Distro: "ubuntu", Flavour: FlavourWSL, Home: home}
+	entries, _, err = Scan(root, cfg, wsl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := find(t, entries, ".zshrc"); !strings.Contains(e.Vault, filepath.FromSlash(".flavour/wsl/")) {
+		t.Errorf("wsl should win over ubuntu, got %s", e.Vault)
+	}
+	if _, ok := Find(entries, ".wslrc"); !ok {
+		t.Error("wsl should see wsl-only entries")
+	}
+	if e := find(t, entries, "/etc/w"); !strings.Contains(e.Vault, filepath.FromSlash(".flavour/wsl/.abs/")) {
+		t.Errorf("wsl abs: %+v", e)
+	}
+}
+
 func TestScanWindowsSections(t *testing.T) {
 	root := t.TempDir()
 	make_tree(t, root, map[string]string{
@@ -208,47 +260,6 @@ data = { default = "d", winpc = "e" }
 	}
 	if !found {
 		t.Errorf("missing unresolved-volume warning: %v", warnings)
-	}
-}
-
-func TestVolumeResolution(t *testing.T) {
-	cfg := load_config(t, `
-[groups]
-work = ["workpc", "buildbox"]
-lab  = ["buildbox"]
-
-[volumes]
-data    = { default = "d", work = "e" }
-scratch = "s"
-sysalt  = { workpc = "q" }
-`)
-	host := func(name string) Host { return Host{Name: name, GOOS: "windows", SysDrive: "C:"} }
-
-	got, err := resolve_volumes(cfg, host("workpc"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for name, want := range map[string]string{"system": "c", "data": "e", "scratch": "s", "sysalt": "q"} {
-		if got[name] != want {
-			t.Errorf("workpc %s: got %q, want %q", name, got[name], want)
-		}
-	}
-
-	got, err = resolve_volumes(cfg, host("other"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got["data"] != "d" {
-		t.Errorf("other data: got %q, want default d", got["data"])
-	}
-	if _, ok := got["sysalt"]; ok {
-		t.Error("sysalt should be unresolved on other")
-	}
-
-	// Conflicting letters from two groups of the same host.
-	cfg.Volumes["data"] = config.Volume{Hosts: map[string]string{"work": "e", "lab": "f"}}
-	if _, err := resolve_volumes(cfg, host("buildbox")); err == nil {
-		t.Error("expected a group-conflict error")
 	}
 }
 

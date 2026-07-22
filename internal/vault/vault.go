@@ -16,6 +16,7 @@ type Host struct {
 	Name         string // short hostname: up to the first dot, lowercased
 	GOOS         string
 	Distro       string // /etc/os-release ID; empty outside Linux
+	Flavour      string // OS flavour (e.g. "wsl"); empty when none
 	Home         string
 	ConfigHome   string // $XDG_CONFIG_HOME; empty when unset
 	AppData      string // Windows %APPDATA%
@@ -45,6 +46,7 @@ func Current() (Host, error) {
 	}
 	if h.GOOS == "linux" {
 		h.Distro = os_release_id("/etc/os-release")
+		h.Flavour = detect_linux_flavour()
 	}
 	if h.GOOS == "windows" && h.SysDrive == "" {
 		h.SysDrive = "C:"
