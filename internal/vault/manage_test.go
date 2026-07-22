@@ -24,25 +24,31 @@ data = "d"`)
 	volumes := map[string]string{"system": "c", "data": "d"}
 
 	cases := []struct {
-		name, path        string
-		host              Host
-		os_flag           bool
-		logical, vaultrel string
+		name, path, flavour string
+		host                Host
+		os_flag             bool
+		logical, vaultrel   string
 	}{
-		{"home mirror", filepath.FromSlash("/Users/rino/.zshrc"), mac, false, ".zshrc", ".zshrc"},
-		{"os layer", filepath.FromSlash("/Users/rino/.hammerspoon"), mac, true, ".hammerspoon", ".os/darwin/.hammerspoon"},
-		{"unix abs", filepath.FromSlash("/etc/hosts"), mac, false, filepath.FromSlash("/etc/hosts"), ".os/darwin/.abs/etc/hosts"},
-		{"windows appdata", filepath.FromSlash("C:/Users/rino/AppData/Roaming/Code/settings.json"), win, false,
+		{"home mirror", filepath.FromSlash("/Users/rino/.zshrc"), "", mac, false, ".zshrc", ".zshrc"},
+		{"os layer", filepath.FromSlash("/Users/rino/.hammerspoon"), "", mac, true, ".hammerspoon", ".os/darwin/.hammerspoon"},
+		{"flavour layer", filepath.FromSlash("/Users/rino/.zshrc"), "wsl",
+			Host{Name: "box", GOOS: "linux", Home: home}, false,
+			".zshrc", ".os/linux/.flavour/wsl/.zshrc"},
+		{"flavour abs", filepath.FromSlash("/etc/hosts"), "wsl",
+			Host{Name: "box", GOOS: "linux", Home: home}, false,
+			filepath.FromSlash("/etc/hosts"), ".os/linux/.flavour/wsl/.abs/etc/hosts"},
+		{"unix abs", filepath.FromSlash("/etc/hosts"), "", mac, false, filepath.FromSlash("/etc/hosts"), ".os/darwin/.abs/etc/hosts"},
+		{"windows appdata", filepath.FromSlash("C:/Users/rino/AppData/Roaming/Code/settings.json"), "", win, false,
 			".appdata/Code/settings.json", ".os/windows/.appdata/Code/settings.json"},
-		{"windows localappdata", filepath.FromSlash("C:/Users/rino/AppData/Local/tool/t.ini"), win, false,
+		{"windows localappdata", filepath.FromSlash("C:/Users/rino/AppData/Local/tool/t.ini"), "", win, false,
 			".local/tool/t.ini", ".os/windows/.local/tool/t.ini"},
-		{"windows home", filepath.FromSlash("C:/Users/rino/.nyagos"), win, true, ".nyagos", ".os/windows/.nyagos"},
-		{"windows system drive", filepath.FromSlash("C:/Program Files/App/app.ini"), win, false,
+		{"windows home", filepath.FromSlash("C:/Users/rino/.nyagos"), "", win, true, ".nyagos", ".os/windows/.nyagos"},
+		{"windows system drive", filepath.FromSlash("C:/Program Files/App/app.ini"), "", win, false,
 			"system:/Program Files/App/app.ini", ".os/windows/.abs/system/Program Files/App/app.ini"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			r, err := Plan(cfg, tc.host, volumes, tc.path, tc.os_flag)
+			r, err := Plan(cfg, tc.host, volumes, tc.path, tc.os_flag, tc.flavour)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -54,6 +60,9 @@ data = "d"`)
 			}
 		})
 	}
+	if _, err := Plan(cfg, mac, volumes, filepath.FromSlash("/Users/rino/.zshrc"), false, "nope"); err == nil {
+		t.Fatal("unknown flavour should fail")
+	}
 }
 
 func TestPlanNonSystemDrive(t *testing.T) {
@@ -61,7 +70,7 @@ func TestPlanNonSystemDrive(t *testing.T) {
 	win := Host{Name: "winpc", GOOS: "windows", Home: filepath.FromSlash("C:/Users/rino"), SysDrive: "C:"}
 
 	// With a unique declared volume on that drive, it is the suggestion.
-	r, err := Plan(cfg, win, map[string]string{"system": "c", "tools": "d"}, filepath.FromSlash("D:/Tools/foo.ini"), false)
+	r, err := Plan(cfg, win, map[string]string{"system": "c", "tools": "d"}, filepath.FromSlash("D:/Tools/foo.ini"), false, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +83,7 @@ func TestPlanNonSystemDrive(t *testing.T) {
 	}
 
 	// Without a candidate the suggestion falls back to "data".
-	r, err = Plan(cfg, win, map[string]string{"system": "c"}, filepath.FromSlash("D:/Tools/foo.ini"), false)
+	r, err = Plan(cfg, win, map[string]string{"system": "c"}, filepath.FromSlash("D:/Tools/foo.ini"), false, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +91,7 @@ func TestPlanNonSystemDrive(t *testing.T) {
 		t.Errorf("suggest: %q", r.Suggest)
 	}
 
-	if _, err := Plan(cfg, win, nil, `\\server\share\x`, false); err == nil || !strings.Contains(err.Error(), "UNC") {
+	if _, err := Plan(cfg, win, nil, `\\server\share\x`, false, ""); err == nil || !strings.Contains(err.Error(), "UNC") {
 		t.Errorf("want UNC error, got %v", err)
 	}
 }

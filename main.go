@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -155,7 +156,7 @@ func status_cmd() *cobra.Command {
 			}
 
 			out := cmd.OutOrStdout()
-			fmt.Fprintf(out, "host: %s (mode: %s)\n\n", s.host.Name, s.sel.Mode)
+			fmt.Fprintf(out, "host: %s (%s)\n\n", s.host.Name, host_status(s))
 			for _, e := range entries {
 				state := "excluded"
 				if s.sel.Selected(e) {
@@ -348,6 +349,24 @@ func prompt_choice(in *bufio.Scanner, out io.Writer, d vault.Diff) (int, error) 
 
 func stdin_is_tty() bool {
 	return term.IsTerminal(int(os.Stdin.Fd()))
+}
+
+// host_status formats the parenthetical part of the status header:
+// "linux/ubuntu, flavour: wsl, mode: exclude".
+func host_status(s *session) string {
+	parts := []string{}
+	env := s.host.GOOS
+	if s.host.Distro != "" {
+		env += "/" + s.host.Distro
+	}
+	if env != "" {
+		parts = append(parts, env)
+	}
+	if s.host.Flavour != "" {
+		parts = append(parts, "flavour: "+s.host.Flavour)
+	}
+	parts = append(parts, "mode: "+s.sel.Mode.String())
+	return strings.Join(parts, ", ")
 }
 
 func unlink_cmd() *cobra.Command {

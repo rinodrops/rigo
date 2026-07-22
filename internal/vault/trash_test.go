@@ -131,6 +131,7 @@ data = "d"`)
 	win := Host{Name: "winpc", GOOS: "windows", Home: filepath.FromSlash("C:/Users/rino"),
 		AppData: filepath.FromSlash("C:/Users/rino/AppData/Roaming"), SysDrive: "C:"}
 	linux := Host{Name: "box", GOOS: "linux", Distro: "ubuntu", Home: "/home/rino"}
+	wsl := Host{Name: "box", GOOS: "linux", Distro: "ubuntu", Flavour: FlavourWSL, Home: "/home/rino"}
 	volumes := map[string]string{"system": "c", "data": "d"}
 
 	cases := []struct {
@@ -141,6 +142,9 @@ data = "d"`)
 		{linux, ".os/linux/.gitconfig", ".gitconfig"},
 		{linux, ".os/linux/ubuntu/.vimrc", ".vimrc"},
 		{linux, ".os/linux/.abs/etc/foo", "/etc/foo"},
+		{linux, ".os/linux/.flavour/wsl/.zshrc", ""}, // flavour mismatch
+		{wsl, ".os/linux/.flavour/wsl/.zshrc", ".zshrc"},
+		{wsl, ".os/linux/.flavour/wsl/.abs/etc/foo", "/etc/foo"},
 		{linux, ".os/darwin/.hammerspoon/a", ""}, // another OS
 		{win, ".os/windows/.appdata/Code/settings.json", ".appdata/Code/settings.json"},
 		{win, ".os/windows/.abs/data/Tools/foo.ini", "data:/Tools/foo.ini"},

@@ -6,12 +6,47 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 )
+
+var (
+	symlink_once      sync.Once
+	symlink_probe_err error
+)
+
+// check_symlink_support probes once whether this process can create
+// symlinks (relevant on Windows without Developer Mode / elevation).
+func check_symlink_support() error {
+	symlink_once.Do(func() {
+		if runtime.GOOS != "windows" {
+			return
+		}
+		dir, err := os.MkdirTemp("", "rigo-symlink-*")
+		if err != nil {
+			symlink_probe_err = err
+			return
+		}
+		defer os.RemoveAll(dir)
+		target := filepath.Join(dir, "t")
+		link := filepath.Join(dir, "l")
+		if err := os.WriteFile(target, []byte("x"), 0o644); err != nil {
+			symlink_probe_err = err
+			return
+		}
+		if err := os.Symlink(target, link); err != nil {
+			symlink_probe_err = symlink_err_msg(err)
+		}
+	})
+	return symlink_probe_err
+}
 
 // Link replaces the target with a symlink to the entry's vault source.
 // Existing content is renamed aside first and restored if the symlink
 // cannot be created, so a failure never loses the local version.
 func Link(e Entry) error {
+	if err := check_symlink_support(); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(e.Target), 0o755); err != nil {
 		return err
 	}
@@ -87,9 +122,13 @@ func stage_path(p string) string {
 // needs Developer Mode or elevation.
 func symlink_err(err error) error {
 	if runtime.GOOS == "windows" {
-		return fmt.Errorf("%w (creating symlinks on Windows requires Developer Mode or an elevated prompt)", err)
+		return symlink_err_msg(err)
 	}
 	return err
+}
+
+func symlink_err_msg(err error) error {
+	return fmt.Errorf("%w (creating symlinks on Windows requires Developer Mode or an elevated prompt)", err)
 }
 
 // copy_any copies a file, directory tree, or symlink. Modes are

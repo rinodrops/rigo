@@ -113,7 +113,7 @@ func generation_entry(gen_root string) (string, error) {
 // derive maps a vault-relative path to its logical path and target on
 // this host, mirroring the scanner's layer rules. It returns empty
 // strings for entries that do not deploy here (another OS, an
-// undeclared distro overlay, or an unresolvable volume).
+// undeclared distro overlay, another flavour, or an unresolvable volume).
 func derive(cfg *config.Config, host Host, volumes map[string]string, vault_rel string) (string, string) {
 	rest, in_os := strings.CutPrefix(vault_rel, cfg.OSDir+"/")
 	if !in_os {
@@ -123,7 +123,13 @@ func derive(cfg *config.Config, host Host, volumes map[string]string, vault_rel 
 	if !ok || goos != host.GOOS {
 		return "", ""
 	}
-	if host.GOOS == "linux" {
+	if fl_rest, ok := strings.CutPrefix(rest, cfg.FlavourDir+"/"); ok {
+		name, fl_rest, ok := strings.Cut(fl_rest, "/")
+		if !ok || !KnownFlavour(name) || name != host.Flavour {
+			return "", ""
+		}
+		rest = fl_rest
+	} else if host.GOOS == "linux" {
 		if first, tail, ok := strings.Cut(rest, "/"); ok && first == host.Distro && distro_listed(cfg, first) {
 			rest = tail
 		} else if ok && first != host.Distro && distro_listed(cfg, first) {

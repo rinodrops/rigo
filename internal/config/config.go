@@ -12,11 +12,12 @@ import (
 )
 
 // Default names of the special vault directories, overridable in
-// rigo.toml via os_dir / abs_dir / trash_dir.
+// rigo.toml via os_dir / abs_dir / trash_dir / flavour_dir.
 const (
-	DefaultOSDir    = ".os"
-	DefaultAbsDir   = ".abs"
-	DefaultTrashDir = ".trash"
+	DefaultOSDir      = ".os"
+	DefaultAbsDir     = ".abs"
+	DefaultTrashDir   = ".trash"
+	DefaultFlavourDir = ".flavour"
 )
 
 // Secret is one [secrets] entry: a backend reference (op:// etc.)
@@ -38,35 +39,37 @@ type Volume struct {
 // (including any trailing slash); normalization against the vault tree
 // happens at scan time.
 type Config struct {
-	Dirs     []string
-	Ignore   []string
-	Distros  []string
-	OSDir    string
-	AbsDir   string
-	TrashDir string
-	Tags     map[string][]string
-	Groups   map[string][]string
-	Include  map[string][]string
-	Exclude  map[string][]string
-	Secrets  map[string]Secret
-	Volumes  map[string]Volume
+	Dirs       []string
+	Ignore     []string
+	Distros    []string
+	OSDir      string
+	AbsDir     string
+	TrashDir   string
+	FlavourDir string
+	Tags       map[string][]string
+	Groups     map[string][]string
+	Include    map[string][]string
+	Exclude    map[string][]string
+	Secrets    map[string]Secret
+	Volumes    map[string]Volume
 }
 
 // raw mirrors the TOML document. Secrets values are decoded loosely
 // because an entry is either a ref string or an inline table.
 type raw struct {
-	Dirs     []string            `toml:"dirs"`
-	Ignore   []string            `toml:"ignore"`
-	Distros  []string            `toml:"distros"`
-	OSDir    string              `toml:"os_dir"`
-	AbsDir   string              `toml:"abs_dir"`
-	TrashDir string              `toml:"trash_dir"`
-	Tags     map[string][]string `toml:"tags"`
-	Groups   map[string][]string `toml:"groups"`
-	Include  map[string][]string `toml:"include"`
-	Exclude  map[string][]string `toml:"exclude"`
-	Secrets  map[string]any      `toml:"secrets"`
-	Volumes  map[string]any      `toml:"volumes"`
+	Dirs       []string            `toml:"dirs"`
+	Ignore     []string            `toml:"ignore"`
+	Distros    []string            `toml:"distros"`
+	OSDir      string              `toml:"os_dir"`
+	AbsDir     string              `toml:"abs_dir"`
+	TrashDir   string              `toml:"trash_dir"`
+	FlavourDir string              `toml:"flavour_dir"`
+	Tags       map[string][]string `toml:"tags"`
+	Groups     map[string][]string `toml:"groups"`
+	Include    map[string][]string `toml:"include"`
+	Exclude    map[string][]string `toml:"exclude"`
+	Secrets    map[string]any      `toml:"secrets"`
+	Volumes    map[string]any      `toml:"volumes"`
 }
 
 // Load reads and validates the rigo.toml at path.
@@ -89,16 +92,17 @@ func Load(path string) (*Config, error) {
 	}
 
 	c := &Config{
-		Dirs:     r.Dirs,
-		Ignore:   r.Ignore,
-		Distros:  r.Distros,
-		OSDir:    r.OSDir,
-		AbsDir:   r.AbsDir,
-		TrashDir: r.TrashDir,
-		Tags:     r.Tags,
-		Groups:   r.Groups,
-		Include:  r.Include,
-		Exclude:  r.Exclude,
+		Dirs:       r.Dirs,
+		Ignore:     r.Ignore,
+		Distros:    r.Distros,
+		OSDir:      r.OSDir,
+		AbsDir:     r.AbsDir,
+		TrashDir:   r.TrashDir,
+		FlavourDir: r.FlavourDir,
+		Tags:       r.Tags,
+		Groups:     r.Groups,
+		Include:    r.Include,
+		Exclude:    r.Exclude,
 	}
 	if c.OSDir == "" {
 		c.OSDir = DefaultOSDir
@@ -108,6 +112,9 @@ func Load(path string) (*Config, error) {
 	}
 	if c.TrashDir == "" {
 		c.TrashDir = DefaultTrashDir
+	}
+	if c.FlavourDir == "" {
+		c.FlavourDir = DefaultFlavourDir
 	}
 
 	if c.Secrets, err = parse_secrets(r.Secrets); err != nil {
@@ -124,7 +131,8 @@ func Load(path string) (*Config, error) {
 
 func (c *Config) validate() error {
 	for _, name := range []struct{ key, val string }{
-		{"os_dir", c.OSDir}, {"abs_dir", c.AbsDir}, {"trash_dir", c.TrashDir},
+		{"os_dir", c.OSDir}, {"abs_dir", c.AbsDir},
+		{"trash_dir", c.TrashDir}, {"flavour_dir", c.FlavourDir},
 	} {
 		if strings.ContainsAny(name.val, `/\`) || name.val == "." || name.val == ".." {
 			return fmt.Errorf("%s: %q must be a plain directory name", name.key, name.val)
