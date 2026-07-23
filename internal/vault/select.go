@@ -22,17 +22,22 @@ func (m Mode) String() string {
 }
 
 // Selection is the per-machine deployment filter derived from
-// [groups] / [include] / [exclude] and the runtime host name.
+// [groups] / [include] / [exclude] / [extra] and the runtime host name.
 type Selection struct {
 	Mode    Mode
 	cfg     *config.Config
 	include map[string]bool
 	exclude map[string]bool
+	// extra is the effective [extra] set for this host (own + groups).
+	extra map[string]bool
+	// all_extra is every path/tag listed under [extra] for any host/group.
+	all_extra map[string]bool
 }
 
 // Select computes the effective selection for host: the host's own
-// include/exclude entries united with those of every group the host
-// belongs to.
+// include/exclude/extra entries united with those of every group the
+// host belongs to. Items listed anywhere in [extra] are constrained to
+// the hosts/groups that name them.
 func Select(cfg *config.Config, host string) *Selection {
 	groups := []string{}
 	for group, members := range cfg.Groups {
@@ -51,10 +56,18 @@ func Select(cfg *config.Config, host string) *Selection {
 		}
 		return eff
 	}
+	all_extra := map[string]bool{}
+	for _, items := range cfg.Extra {
+		for _, item := range items {
+			all_extra[item] = true
+		}
+	}
 	s := &Selection{
-		cfg:     cfg,
-		include: collect(cfg.Include),
-		exclude: collect(cfg.Exclude),
+		cfg:       cfg,
+		include:   collect(cfg.Include),
+		exclude:   collect(cfg.Exclude),
+		extra:     collect(cfg.Extra),
+		all_extra: all_extra,
 	}
 	if len(s.include) > 0 {
 		s.Mode = ModeInclude
@@ -67,14 +80,20 @@ func (s *Selection) Selected(e Entry) bool {
 	if s.matches(s.exclude, e) {
 		return false
 	}
+	// [extra] is an independent filter: listed paths/tags deploy only
+	// on hosts that name them (directly or via group). Unlisted entries
+	// keep the include/exclude rules below.
+	if s.matches(s.all_extra, e) {
+		return s.matches(s.extra, e)
+	}
 	if s.Mode == ModeInclude {
 		return s.matches(s.include, e)
 	}
 	return true
 }
 
-// matches checks an effective include/exclude set: each item is a tag
-// name or a path. A path item matches the entry itself or, for
+// matches checks an effective include/exclude/extra set: each item is a
+// tag name or a path. A path item matches the entry itself or, for
 // directories, anything beneath their path.
 func (s *Selection) matches(set map[string]bool, e Entry) bool {
 	for item := range set {

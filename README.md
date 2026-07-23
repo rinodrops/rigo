@@ -117,6 +117,9 @@ servers = ["zsh", ".gitconfig"]
 [exclude]                    # host/group → these do NOT deploy
 work = ["vim"]
 
+[extra]                      # host/group → deploy ONLY on these hosts
+pis = ["gpio", ".config/pi.toml"]  # other hosts see them as excluded
+
 # Optional renames for vault structural directories (defaults shown):
 # os_dir = ".os"
 # abs_dir = ".abs"
@@ -149,16 +152,23 @@ logical path): common → OS → distro → flavour. Use
 `--os` alone still means `.os/<goos>/` and does not auto-route to a
 flavour. `rigo status` shows the detected flavour when present.
 
-**Selective deployment** (`[include]` / `[exclude]`) is host/group
-oriented:
+**Selective deployment** (`[include]` / `[exclude]` / `[extra]`) is
+host/group oriented:
 
 - `[include]` is an allowlist — once a host has any include entries,
   only those paths/tags deploy. Poor fit when most files are shared.
 - `[exclude]` is a denylist — good for “almost everything, omit a few.”
+- `[extra]` is an affirmative bundle — paths/tags listed there deploy
+  only on the hosts/groups that name them; everywhere else they show as
+  `excluded`. Entries never listed under `[extra]` keep the usual
+  include/exclude rules. Use this when most of the vault is shared and
+  a few files belong to a host group (for example a Pi fleet). It is
+  independent of include mode: an `[extra]` target deploys on that host
+  even if the host is in allowlist mode and the path is not in
+  `[include]`. `[exclude]` still wins when both apply.
 - For environment-class differences (WSL vs bare metal, etc.), prefer
-  flavour (or distro) overlays in the vault tree, not include/exclude.
-- There is no affirmative “only these hosts” selector yet; host-group
-  allowlisting of individual paths is a future consideration.
+  flavour (or distro) overlays in the vault tree, not include/exclude/
+  extra.
 
 The host a machine identifies as is its hostname up to the first dot,
 lowercased (`rigo status` shows it).
@@ -180,6 +190,15 @@ Releases are built by CI from version tags; the release notes are taken
 from the matching section below (`just release-notes v1.0.0`).
 
 ## Release history
+
+### v1.2.0 — 2026-07-23
+
+Add `[extra]` for affirmative selective deployment: list paths or tags
+under a host or group so those entries deploy only there, while the rest
+of the vault keeps the usual `[include]` / `[exclude]` rules. Other hosts
+see them as `excluded`. `[exclude]` still wins when both apply, and
+`[extra]` stays independent of allowlist mode. Document the section in
+both READMEs.
 
 ### v1.1.0 — 2026-07-22
 
