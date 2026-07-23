@@ -16,6 +16,9 @@ vim = [".vim/", ".vimrc"]
 
 [exclude]
 macbook = [".hammerspoon/", "vim"]
+
+[extra]
+pis = [".hammerspoon/"]
 `
 
 func open_fixture(t *testing.T, content string) *Edit {
@@ -123,16 +126,16 @@ func TestEditSetKeyOverwrites(t *testing.T) {
 
 func TestEditRemoveRefs(t *testing.T) {
 	e := open_fixture(t, edit_fixture)
-	// ".hammerspoon/" appears in dirs and in exclude.macbook; the
-	// query uses no trailing slash on purpose.
-	if got := e.RemoveRefs(".hammerspoon"); got != 2 {
-		t.Errorf("removed %d, want 2", got)
+	// ".hammerspoon/" appears in dirs, exclude.macbook, and extra.pis;
+	// the query uses no trailing slash on purpose.
+	if got := e.RemoveRefs(".hammerspoon"); got != 3 {
+		t.Errorf("removed %d, want 3", got)
 	}
 	out := saved(t, e)
 	if strings.Contains(out, ".hammerspoon") {
 		t.Errorf("reference survived:\n%s", out)
 	}
-	for _, want := range []string{"# my dotfiles", "# vim family", "dirs", "macbook"} {
+	for _, want := range []string{"# my dotfiles", "# vim family", "dirs", "macbook", "pis"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("lost %q:\n%s", want, out)
 		}
@@ -146,5 +149,8 @@ func TestEditRemoveRefs(t *testing.T) {
 	}
 	if got := cfg.Exclude["macbook"]; len(got) != 1 || got[0] != "vim" {
 		t.Errorf("exclude.macbook: %v", got)
+	}
+	if got := cfg.Extra["pis"]; len(got) != 0 {
+		t.Errorf("extra.pis: %v", got)
 	}
 }

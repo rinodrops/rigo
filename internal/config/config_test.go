@@ -39,6 +39,9 @@ servers = ["zsh", ".gitconfig"]
 work    = ["vim", "claude"]
 macbook = [".hammerspoon/"]
 
+[extra]
+pis = ["claude"]
+
 [secrets]
 ".config/gh/hosts.yml" = "op://Personal/GitHub CLI/hosts.yml"
 ".netrc"               = { ref = "op://Personal/netrc/notesPlain", mode = 0o640 }
@@ -62,6 +65,9 @@ macbook = [".hammerspoon/"]
 	}
 	if got := c.Exclude["macbook"]; len(got) != 1 || got[0] != ".hammerspoon/" {
 		t.Errorf("exclude.macbook: got %v", got)
+	}
+	if got := c.Extra["pis"]; len(got) != 1 || got[0] != "claude" {
+		t.Errorf("extra.pis: got %v", got)
 	}
 
 	hosts := c.Secrets[".config/gh/hosts.yml"]
@@ -102,6 +108,7 @@ func TestLoadErrors(t *testing.T) {
 		{"uppercase host", "[groups]\nwork = [\"WorkPC\"]", "lowercase"},
 		{"dotted host", "[groups]\nwork = [\"pc.local\"]", "no dots"},
 		{"uppercase include key", "[include]\nWork = [\"vim\"]", "lowercase"},
+		{"uppercase extra key", "[extra]\nWork = [\"vim\"]", "lowercase"},
 		{"group and host collision", "[groups]\na = [\"b\"]\nb = [\"c\"]", "both a group name and a host name"},
 		{"secret without scheme", `[secrets]
 ".netrc" = "Personal/netrc"`, "backend scheme"},

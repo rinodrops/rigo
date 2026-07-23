@@ -50,6 +50,7 @@ type Config struct {
 	Groups     map[string][]string
 	Include    map[string][]string
 	Exclude    map[string][]string
+	Extra      map[string][]string
 	Secrets    map[string]Secret
 	Volumes    map[string]Volume
 }
@@ -68,6 +69,7 @@ type raw struct {
 	Groups     map[string][]string `toml:"groups"`
 	Include    map[string][]string `toml:"include"`
 	Exclude    map[string][]string `toml:"exclude"`
+	Extra      map[string][]string `toml:"extra"`
 	Secrets    map[string]any      `toml:"secrets"`
 	Volumes    map[string]any      `toml:"volumes"`
 }
@@ -103,6 +105,7 @@ func Load(path string) (*Config, error) {
 		Groups:     r.Groups,
 		Include:    r.Include,
 		Exclude:    r.Exclude,
+		Extra:      r.Extra,
 	}
 	if c.OSDir == "" {
 		c.OSDir = DefaultOSDir
@@ -158,10 +161,11 @@ func (c *Config) validate() error {
 		}
 	}
 
-	// Group members and include/exclude keys identify hosts (or groups)
-	// and share one namespace: lowercase, no dots, so that runtime
-	// hostname matching never depends on case folding. "default" is
-	// reserved: it selects the fallback letter in [volumes] tables.
+	// Group members and include/exclude/extra keys identify hosts (or
+	// groups) and share one namespace: lowercase, no dots, so that
+	// runtime hostname matching never depends on case folding.
+	// "default" is reserved: it selects the fallback letter in
+	// [volumes] tables.
 	hosts := map[string]string{}
 	for group, members := range c.Groups {
 		if err := check_name("groups", group); err != nil {
@@ -182,7 +186,7 @@ func (c *Config) validate() error {
 	for _, section := range []struct {
 		key     string
 		entries map[string][]string
-	}{{"include", c.Include}, {"exclude", c.Exclude}} {
+	}{{"include", c.Include}, {"exclude", c.Exclude}, {"extra", c.Extra}} {
 		for name := range section.entries {
 			if err := check_name(section.key, name); err != nil {
 				return err

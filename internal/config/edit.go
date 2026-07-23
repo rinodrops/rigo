@@ -89,9 +89,9 @@ func (e *Edit) SetKey(key []string, value string) error {
 }
 
 // RemoveRefs removes every array item equal to path (modulo a trailing
-// slash) from dirs and from every array under [tags], [include], and
-// [exclude]. Keys whose arrays become empty are kept. It returns the
-// number of removed items.
+// slash) from dirs and from every array under [tags], [include],
+// [exclude], and [extra]. Keys whose arrays become empty are kept. It
+// returns the number of removed items.
 func (e *Edit) RemoveRefs(path string) int {
 	want := strings.TrimSuffix(path, "/")
 	removed := 0
@@ -120,7 +120,7 @@ func (e *Edit) RemoveRefs(path string) int {
 	if kv := e.find_kv([]string{"dirs"}); kv != nil {
 		clean(kv)
 	}
-	for _, table := range []string{"tags", "include", "exclude"} {
+	for _, table := range []string{"tags", "include", "exclude", "extra"} {
 		for _, entry := range e.doc.Find(table) {
 			if entry.Section == nil {
 				continue
