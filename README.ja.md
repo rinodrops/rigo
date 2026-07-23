@@ -118,6 +118,9 @@ servers = ["zsh", ".gitconfig"]
 [exclude]                    # host/group → these do NOT deploy
 work = ["vim"]
 
+[extra]                      # host/group → 列挙ホストにだけ展開
+pis = ["gpio", ".config/pi.toml"]  # 他ホストでは excluded
+
 # Optional renames for vault structural directories (defaults shown):
 # os_dir = ".os"
 # abs_dir = ".abs"
@@ -149,12 +152,12 @@ WSLの検知は `/proc/sys/fs/binfmt_misc/WSLInterop`，`/run/WSL`，または
 `.os/<goos>/` のまま。自動では flavour 層へ送りません）。
 `rigo status` は検知した flavour を表示します。
 
-**選択的展開**（`[include]` / `[exclude]`）はホスト／グループ向けです:
+**選択的展開**（`[include]` / `[exclude]` / `[extra]`）はホスト／グループ向けです:
 
 - `[include]` は許可リスト — 一度でもincludeがあると，列挙したものだけが展開されます。大部分が共通な構成には向きません。
 - `[exclude]` は拒否リスト — 「ほぼ全部，一部だけ外す」向きです。
-- WSLと素のUbuntuのような環境クラス差は，include/excludeではなく flavour（またはディストロ）オーバーレイを使います。
-- 「特定ホストにだけ載せる」肯定形の選択は未対応です（将来検討）。
+- `[extra]` は肯定形の追加バンドル — そこに列挙した path/tag は，それを書いたホスト／グループにだけ展開され，それ以外では `excluded` になります。`[extra]` に一度も出てこないエントリは従来の include/exclude 規則のままです。Vaultの大部分が共通で，一部だけ特定ホスト群（例: Pi群）向け、という場合に使います。include モードとは独立で，allowlist ホストでも `[extra]` の対象なら include に無くても展開されます。両方に当たるときは `[exclude]` が勝ります。
+- WSLと素のUbuntuのような環境クラス差は，include/exclude/extraではなく flavour（またはディストロ）オーバーレイを使います。
 
 マシンの識別子はホスト名の最初のドットまでを小文字化したもので，
 `rigo status` のヘッダで確認できます。
