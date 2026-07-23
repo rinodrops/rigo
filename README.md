@@ -191,6 +191,15 @@ from the matching section below (`just release-notes v1.0.0`).
 
 ## Release history
 
+### v1.2.0 — 2026-07-23
+
+Add `[extra]` for affirmative selective deployment: list paths or tags
+under a host or group so those entries deploy only there, while the rest
+of the vault keeps the usual `[include]` / `[exclude]` rules. Other hosts
+see them as `excluded`. `[exclude]` still wins when both apply, and
+`[extra]` stays independent of allowlist mode. Document the section in
+both READMEs.
+
 ### v1.1.0 — 2026-07-22
 
 Add OS flavour overlays for environment classes that share a GOOS (and
